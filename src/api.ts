@@ -24,6 +24,7 @@ export interface MeResponse {
   username: string
   email: string
   employee_id: string
+  is_staff?: boolean
   acknowledged_bundle_hash: string | null
   current_bundle_hash: string
   groups_display: string[]
@@ -33,6 +34,10 @@ export interface CustomerSummary {
   id: string
   name: string
   code: string
+  email: string
+  phone: string
+  address: string
+  notes: string
   created_at: string
 }
 
@@ -67,6 +72,15 @@ export async function getCustomers(): Promise<CustomerSummary[]> {
 
 export async function createCustomer(data: { name: string; code?: string }): Promise<CustomerSummary> {
   const r = await request('/customers/create/', { method: 'POST', body: JSON.stringify(data) })
+  if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+
+export async function updateCustomer(
+  id: string,
+  data: { name?: string; code?: string; email?: string; phone?: string; address?: string; notes?: string }
+): Promise<CustomerSummary> {
+  const r = await request(`/customers/${id}/`, { method: 'PATCH', body: JSON.stringify(data) })
   if (!r.ok) throw new Error(await r.text())
   return r.json()
 }
@@ -514,6 +528,116 @@ export async function getAuditEvents(params?: { asset_id?: string; event_type?: 
   const suffix = q.toString() ? '?' + q.toString() : ''
   const r = await request(`/audit-events/${suffix}`)
   if (!r.ok) throw new Error('Failed to get audit events')
+  return r.json()
+}
+
+// Intake requests (public submit + portal list/update)
+export const INTAKE_REQUEST_ASSET_TYPES = [
+  { value: 'PHONE', label: 'Phones' },
+  { value: 'LAPTOP', label: 'Laptops' },
+  { value: 'TABLET', label: 'Tablets' },
+  { value: 'SERVER', label: 'Servers' },
+  { value: 'OTHER', label: 'Other' },
+] as const
+
+export interface IntakeRequestCustomerSearchHit {
+  id: string
+  name: string
+}
+
+export interface IntakeRequestSummary {
+  id: string
+  asset_types: string[]
+  asset_quantities: Record<string, number>
+  asset_types_display: string[]
+  asset_quantities_display: string
+  customer: string
+  customer_name: string
+  company_name_raw: string
+  contact_name: string
+  contact_email: string
+  contact_phone: string
+  notes: string
+  internal_notes: string
+  status: string
+  rejected_reason: string
+  accepted_by: string | null
+  accepted_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export async function intakeRequestCustomerSearch(q: string): Promise<IntakeRequestCustomerSearchHit[]> {
+  const r = await request(`/intake-requests/customer-search/?q=${encodeURIComponent(q)}`)
+  if (!r.ok) return []
+  return r.json()
+}
+
+export function canSeeIntakeRequests(me?: MeResponse | null): boolean {
+  if (!me) return false
+  const g = (me.groups_display || []).map((x) => x.toLowerCase())
+  return me.is_staff === true || g.includes('operations') || g.includes('customer_relations')
+}
+
+export async function createIntakeRequest(data: {
+  asset_types: string[]
+  asset_quantities?: Record<string, number>
+  customer_id?: string | null
+  company_name?: string
+  contact_name?: string
+  contact_email?: string
+  contact_phone?: string
+  notes?: string
+}): Promise<{ id: string; message: string }> {
+  await ensureCsrfCookie()
+  const r = await request('/intake-requests/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  if (!r.ok) {
+    const text = await r.text()
+    let msg = text
+    try {
+      const j = JSON.parse(text)
+      if (j.detail) msg = Array.isArray(j.detail) ? j.detail.join(' ') : j.detail
+    } catch {
+      // use text
+    }
+    throw new Error(msg)
+  }
+  return r.json()
+}
+
+export async function getIntakeRequests(params?: {
+  status?: string
+  search?: string
+  ordering?: string
+}): Promise<IntakeRequestSummary[]> {
+  const q = new URLSearchParams()
+  if (params?.status) q.set('status', params.status)
+  if (params?.search) q.set('search', params.search)
+  if (params?.ordering) q.set('ordering', params.ordering)
+  const suffix = q.toString() ? '?' + q.toString() : ''
+  const r = await request(`/intake-requests/${suffix}`)
+  if (!r.ok) throw new Error('Failed to get intake requests')
+  return r.json()
+}
+
+export async function getIntakeRequest(id: string): Promise<IntakeRequestSummary & { accepted_by_username?: string | null }> {
+  const r = await request(`/intake-requests/${id}/`)
+  if (!r.ok) throw new Error('Failed to get intake request')
+  return r.json()
+}
+
+export async function updateIntakeRequest(
+  id: string,
+  data: { status?: string; rejected_reason?: string; internal_notes?: string }
+): Promise<IntakeRequestSummary> {
+  const r = await request(`/intake-requests/${id}/patch/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+  if (!r.ok) throw new Error(await r.text())
   return r.json()
 }
 

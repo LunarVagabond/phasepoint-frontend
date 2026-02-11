@@ -2,7 +2,7 @@
   <div class="assets">
     <div v-if="intakeBatch" class="intake-batch-banner">
       <span class="banner-text">Showing intake batch by <strong>{{ intakeBatch.created_by_username }}</strong> on {{ formatDate(intakeBatch.created_at) }} ({{ intakeBatch.asset_count }} assets)</span>
-      <router-link to="/assets" class="banner-clear">Show all assets</router-link>
+      <router-link to="/employee-portal/assets" class="banner-clear">Show all assets</router-link>
     </div>
     <div class="assets-toolbar">
       <input

@@ -1,6 +1,5 @@
 <template>
   <div class="policy-wiki">
-    <SiteHeader :policy-only="needsPolicyAccept" />
     <div class="wiki-body">
       <PolicySidebar :policies="policies" :toc="[]" :show-toc="false" :versions="versions" :can-edit="canEdit" :needs-policy-accept="needsPolicyAccept" side="left" />
       <main class="wiki-main">
@@ -26,7 +25,6 @@
 import { ref, onMounted, watch, provide, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ensureCsrfCookie, getPolicies, getBundleHash, getMe, acknowledgePolicies, canEditPolicies } from '../api'
-import SiteHeader from '../components/SiteHeader.vue'
 import PolicySidebar from '../components/PolicySidebar.vue'
 import WikiAcceptFooter from '../components/WikiAcceptFooter.vue'
 import type { TocItem } from '../components/PolicySidebar.vue'
@@ -96,7 +94,7 @@ async function submitAccept() {
   loading.value = true
   try {
     await acknowledgePolicies(currentHash.value)
-    const redirect = (route.query.redirect as string) || '/'
+    const redirect = (route.query.redirect as string) || '/employee-portal'
     await router.push(redirect)
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to acknowledge'

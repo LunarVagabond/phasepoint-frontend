@@ -72,7 +72,7 @@ function formatDate(iso: string) {
 function openBatch(row: Record<string, unknown>) {
   const id = row.id as string
   if (!id) return
-  router.push({ path: '/assets', query: { intake_batch: id } })
+  router.push({ path: '/employee-portal/assets', query: { intake_batch: id } })
 }
 
 async function load() {

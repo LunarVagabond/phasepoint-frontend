@@ -76,7 +76,7 @@
       </div>
     </section>
 
-    <p class="back-link"><router-link to="/">Back to dashboard</router-link></p>
+    <p class="back-link"><router-link to="/employee-portal">Back to dashboard</router-link></p>
   </div>
 </template>
 
@@ -147,7 +147,7 @@ async function submitIntake() {
   submitting.value = true
   try {
     const result = await bulkIntake(prepared.value)
-    await router.push({ path: '/assets', query: { intake_batch: result.batch_id } })
+    await router.push({ path: '/employee-portal/assets', query: { intake_batch: result.batch_id } })
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Intake failed.'
   } finally {

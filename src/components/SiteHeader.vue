@@ -1,19 +1,19 @@
 <template>
   <header class="site-header">
-    <router-link to="/" class="brand">Phasepoint</router-link>
+    <router-link to="/employee-portal" class="brand">Phasepoint</router-link>
     <h1 class="page-title">{{ pageTitle }}</h1>
     <nav class="nav nav-right">
-      <router-link to="/" exact-active-class="active">Dashboard</router-link>
-      <router-link v-if="!policyOnly" to="/intake" active-class="active">Intake</router-link>
-      <router-link v-else to="/intake" class="disabled" @click.prevent>Intake</router-link>
-      <router-link v-if="!policyOnly" to="/assets" active-class="active">Assets</router-link>
-      <router-link v-else to="/assets" class="disabled" @click.prevent>Assets</router-link>
-      <router-link v-if="!policyOnly" to="/batches" active-class="active">Batches</router-link>
-      <router-link v-else to="/batches" class="disabled" @click.prevent>Batches</router-link>
-      <router-link v-if="!policyOnly" to="/audit" active-class="active">Audit</router-link>
-      <router-link v-else to="/audit" class="disabled" @click.prevent>Audit</router-link>
-      <router-link v-if="!policyOnly" to="/reports" active-class="active">Reports</router-link>
-      <router-link v-else to="/reports" class="disabled" @click.prevent>Reports</router-link>
+      <router-link to="/employee-portal" exact-active-class="active">Dashboard</router-link>
+      <router-link v-if="!policyOnly" to="/employee-portal/intake" active-class="active">Intake</router-link>
+      <router-link v-else to="/employee-portal/intake" class="disabled" @click.prevent>Intake</router-link>
+      <router-link v-if="!policyOnly" to="/employee-portal/assets" active-class="active">Assets</router-link>
+      <router-link v-else to="/employee-portal/assets" class="disabled" @click.prevent>Assets</router-link>
+      <router-link v-if="!policyOnly" to="/employee-portal/batches" active-class="active">Batches</router-link>
+      <router-link v-else to="/employee-portal/batches" class="disabled" @click.prevent>Batches</router-link>
+      <router-link v-if="!policyOnly" to="/employee-portal/audit" active-class="active">Audit</router-link>
+      <router-link v-else to="/employee-portal/audit" class="disabled" @click.prevent>Audit</router-link>
+      <router-link v-if="!policyOnly" to="/employee-portal/reports" active-class="active">Reports</router-link>
+      <router-link v-else to="/employee-portal/reports" class="disabled" @click.prevent>Reports</router-link>
       <router-link :to="{ name: 'AllPolicies' }" active-class="active">Policies</router-link>
       <button type="button" class="theme-toggle" :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'" @click="toggleTheme">
         <svg v-if="theme === 'dark'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -74,7 +74,7 @@ onMounted(() => {
 function logout() {
   // API base port must match backend API_PORT in .env (default: 3332)
   const apiBase = (import.meta.env.VITE_API_URL || "http://localhost:3332/api").replace(/\/api\/?$/, "") || "http://localhost:3332"
-  const nextUrl = encodeURIComponent(window.location.origin + "/login")
+  const nextUrl = encodeURIComponent(window.location.origin + "/employee-portal/login")
   window.location.href = `${apiBase}/api/auth/logout/?next=${nextUrl}`
 }
 </script>

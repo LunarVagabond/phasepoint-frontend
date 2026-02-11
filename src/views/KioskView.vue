@@ -57,7 +57,7 @@
     </template>
 
     <footer v-if="!isKioskBuild" class="kiosk-footer">
-      <router-link to="/">← Dashboard</router-link>
+      <router-link to="/employee-portal">← Dashboard</router-link>
     </footer>
   </div>
 </template>

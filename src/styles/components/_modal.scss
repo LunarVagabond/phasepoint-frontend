@@ -23,6 +23,11 @@
   overflow-y: auto;
 }
 
+.modal-wide {
+  width: 100%;
+  max-width: 720px;
+}
+
 .modal h3 {
   margin: 0 0 $space-2;
   font-size: $font-size-lg;
@@ -46,7 +51,8 @@
   input[type="email"],
   input[type="text"],
   input[type="password"],
-  select {
+  select,
+  textarea {
     width: 100%;
     padding: $space-2 $space-3;
     border: 1px solid var(--color-border);
@@ -62,6 +68,12 @@
       border-color: var(--color-primary);
       box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
     }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.5;
   }
 }
 

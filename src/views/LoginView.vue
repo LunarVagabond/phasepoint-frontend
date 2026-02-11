@@ -38,7 +38,7 @@ async function onSubmit() {
     }
     const me = await getMe()
     const needsPolicyAccept = !me.acknowledged_bundle_hash || me.current_bundle_hash !== me.acknowledged_bundle_hash
-    const redirectTo = (route.query.redirect as string) || '/'
+    const redirectTo = (route.query.redirect as string) || '/employee-portal'
     if (needsPolicyAccept) {
       router.push({ name: 'Policies', query: { redirect: redirectTo } })
     } else {
