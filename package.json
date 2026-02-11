@@ -1,0 +1,27 @@
+{
+  "name": "phasepoint-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "ts-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "dompurify": "^3.3.1",
+    "marked": "^17.0.1",
+    "vue": "^3.5.25"
+  },
+  "devDependencies": {
+    "@types/dompurify": "^3.0.5",
+    "@vitejs/plugin-vue": "^6.0.2",
+    "sass": "^1.97.3",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-pwa": "^1.2.0",
+    "vue-router": "^4.6.4",
+    "vue-tsc": "^3.2.4"
+  }
+}

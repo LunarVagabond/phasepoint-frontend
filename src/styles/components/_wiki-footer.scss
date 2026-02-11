@@ -1,0 +1,52 @@
+// WikiAcceptFooter component styles
+@use '../variables' as *;
+
+.wiki-accept-footer {
+  padding: $space-4 $space-6;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  gap: $space-4;
+  flex-wrap: wrap;
+}
+
+.accept-check {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  cursor: pointer;
+  font-size: $font-size-sm;
+  color: var(--color-text);
+  
+  input[type="checkbox"] {
+    cursor: pointer;
+  }
+}
+
+.accept-btn {
+  padding: $space-2 $space-4;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: $radius-md;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.wiki-accept-footer .error {
+  color: var(--color-error);
+  margin: 0;
+  width: 100%;
+  font-size: $font-size-sm;
+}

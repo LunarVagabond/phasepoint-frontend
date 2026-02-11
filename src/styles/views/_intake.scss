@@ -1,0 +1,193 @@
+// IntakeView component styles
+@use '../variables' as *;
+
+.intake {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.intake-header {
+  margin-bottom: $space-8;
+}
+
+.intake-title {
+  font-size: $font-size-2xl;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 $space-2;
+}
+
+.intake-desc {
+  font-size: $font-size-base;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.intake .section-title {
+  font-size: $font-size-lg;
+  font-weight: 600;
+  margin: 0 0 $space-3;
+  color: var(--color-text);
+}
+
+.scan-hint {
+  font-size: $font-size-sm;
+  color: var(--color-text-muted);
+  margin: 0 0 $space-2;
+}
+
+.intake-scan {
+  margin-bottom: $space-8;
+}
+
+.scan-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+  align-items: center;
+}
+
+.scan-fields input,
+.scan-input,
+.customer-select {
+  padding: $space-2 $space-3;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: $font-size-base;
+  min-width: 140px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+  }
+}
+
+.scan-input {
+  flex: 1;
+  min-width: 160px;
+}
+
+.btn-add-row {
+  padding: $space-2 $space-4;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--color-text);
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--color-border);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.intake .error-inline {
+  color: var(--color-error);
+  font-size: $font-size-sm;
+  margin: $space-2 0 0;
+}
+
+.intake-list {
+  margin-bottom: $space-6;
+}
+
+.intake .muted {
+  color: var(--color-text-muted);
+  margin: 0 0 $space-4;
+}
+
+.prepared-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: $space-4;
+  font-size: $font-size-sm;
+  background: var(--color-surface);
+  border-radius: $radius-md;
+  overflow: hidden;
+
+  th,
+  td {
+    padding: $space-2 $space-3;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  th {
+    font-weight: 600;
+    color: var(--color-text-muted);
+    background: var(--color-background);
+  }
+
+  .btn-remove-row {
+    padding: 0 $space-2;
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: var(--color-error);
+    }
+  }
+}
+
+.intake-actions {
+  display: flex;
+  align-items: center;
+  gap: $space-4;
+}
+
+.btn-intake {
+  padding: $space-3 $space-6;
+  font-size: $font-size-base;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: $radius-md;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+  }
+  
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.intake .error {
+  color: var(--color-error);
+  margin: 0;
+}
+
+.back-link {
+  margin-top: $space-6;
+  
+  a {
+    color: var(--color-primary);
+    text-decoration: none;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

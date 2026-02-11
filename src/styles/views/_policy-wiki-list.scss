@@ -1,0 +1,38 @@
+// PolicyWikiList component styles
+@use '../variables' as *;
+
+.wiki-list {
+  max-width: 720px;
+}
+
+.intro {
+  color: var(--color-text-muted);
+  font-size: $font-size-base;
+  line-height: 1.6;
+  margin: 0 0 $space-4;
+}
+
+.wiki-list .policy-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.wiki-list .policy-list li {
+  margin-bottom: $space-2;
+}
+
+.wiki-list .policy-list a {
+  display: block;
+  padding: $space-2 $space-3;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-radius: $radius-md;
+  transition: background 0.15s, color 0.15s;
+  font-weight: 500;
+  
+  &:hover {
+    background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+    text-decoration: none;
+  }
+}

@@ -1,0 +1,74 @@
+// LoginView component styles
+@use '../variables' as *;
+
+.login {
+  max-width: 320px;
+  margin: 2rem auto;
+  padding: $space-4;
+  
+  h1 {
+    font-size: $font-size-2xl;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 $space-6;
+    text-align: center;
+  }
+  
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: $space-3;
+  }
+  
+  input {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: $space-3;
+    border: 1px solid var(--color-border);
+    border-radius: $radius-md;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: $font-size-base;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+    }
+    
+    &::placeholder {
+      color: var(--color-text-muted);
+    }
+  }
+  
+  button {
+    margin-top: $space-2;
+    padding: $space-3 $space-4;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: $radius-md;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:hover:not(:disabled) {
+      background: var(--color-primary-hover);
+    }
+    
+    &:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+  }
+  
+  .error {
+    color: var(--color-error);
+    margin-top: $space-2;
+    font-size: $font-size-sm;
+    text-align: center;
+  }
+}
