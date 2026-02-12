@@ -6,6 +6,7 @@
         Reports are available in CSV format for use in spreadsheets or external systems.
       </p>
     </header>
+    <p v-if="downloadError" class="reports-error">{{ downloadError }}</p>
     <section class="reports-grid">
       <article class="report-card">
         <h2 class="report-card-title">Asset disposition</h2>
@@ -42,6 +43,9 @@
         <button type="button" class="report-download" @click="download('reports/kpis/', 'kpi_report')">
           Download CSV
         </button>
+        <button type="button" class="report-download" @click="downloadPdf('kpi-pdf', 'kpi_report')">
+          Download KPI PDF
+        </button>
       </article>
       <article class="report-card">
         <h2 class="report-card-title">Audit events</h2>
@@ -51,48 +55,74 @@
         <button type="button" class="report-download" @click="download('reports/audit-events/', 'audit_events')">
           Download CSV
         </button>
-        <button type="button" class="report-download" @click="downloadPdf('reports/kpis/', 'kpi_report')">
-          Download KPI PDF
-        </button>
       </article>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { request } from '../api'
 
+const downloadError = ref('')
+
 async function download(path: string, name: string) {
+  downloadError.value = ''
   const pathNorm = path.startsWith('/') ? path : `/${path}`
-  const r = await request(`${pathNorm}?format=csv`)
-  if (!r.ok) {
-    const text = await r.text()
-    try {
-      const j = JSON.parse(text)
-      throw new Error(j.detail || text || 'Failed to get report')
-    } catch (e) {
-      if (e instanceof Error) throw e
-      throw new Error(text || 'Failed to get report')
+  try {
+    const r = await request(`${pathNorm}?format=csv`)
+    if (!r.ok) {
+      const text = await r.text()
+      try {
+        const j = JSON.parse(text)
+        throw new Error(j.detail || text || 'Failed to get report')
+      } catch (e) {
+        if (e instanceof Error) throw e
+        throw new Error(text || 'Failed to get report')
+      }
     }
+    const blob = await r.blob()
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `${name}.csv`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  } catch (e) {
+    downloadError.value = e instanceof Error ? e.message : 'Failed to download report'
   }
-  const blob = await r.blob()
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `${name}.csv`
-  a.click()
-  URL.revokeObjectURL(a.href)
 }
 
 async function downloadPdf(path: string, name: string) {
+  downloadError.value = ''
   const pathNorm = path.startsWith('/') ? path : `/${path}`
-  const r = await request(`${pathNorm}?format=pdf`)
-  if (!r.ok) throw new Error('Failed to get PDF report')
-  const blob = await r.blob()
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `${name}.pdf`
-  a.click()
-  URL.revokeObjectURL(a.href)
+  try {
+    const r = await request(`${pathNorm}?format=pdf`)
+    if (!r.ok) {
+      const text = await r.text()
+      let msg = ''
+      try {
+        const j = JSON.parse(text)
+        if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)
+      } catch {
+        msg = text.slice(0, 200) || `HTTP ${r.status}`
+      }
+      const statusText = r.status ? `${r.status} ${r.statusText || ''}`.trim() : 'Error'
+      downloadError.value = `PDF report failed (${statusText})${msg ? `: ${msg}` : ''}`
+      return
+    }
+    const blob = await r.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${name}.pdf`
+    a.style.display = 'none'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch (e) {
+    downloadError.value = e instanceof Error ? e.message : 'Failed to download PDF'
+  }
 }
 </script>
 

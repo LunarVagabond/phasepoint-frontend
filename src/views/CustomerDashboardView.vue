@@ -106,6 +106,11 @@ onMounted(async () => {
       rejected_reason: '',
       accepted_by: null,
       accepted_at: null,
+      received_at: r.received_at ?? null,
+      delivery_type: r.delivery_type,
+      pickup_scheduled_at: r.pickup_scheduled_at ?? null,
+      drop_off_preferred_start: r.drop_off_preferred_start ?? null,
+      drop_off_preferred_end: r.drop_off_preferred_end ?? null,
       created_at: r.created_at,
       updated_at: r.updated_at,
     }))
@@ -151,7 +156,7 @@ function logisticsLabel(r: IntakeRequestSummary): string {
     return 'Drop-off'
   }
   if (r.pickup_scheduled_at) {
-    return `Pickup ${formatDate(r.pickup_scheduled_at)}`
+    return `Pickup scheduled for ${formatDate(r.pickup_scheduled_at)}`
   }
   return 'Pickup'
 }

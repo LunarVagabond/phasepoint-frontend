@@ -17,6 +17,7 @@ const routes = [
     meta: { requiresAuth: true, employeeOnly: true },
     children: [
       { path: '', name: 'Dashboard', component: () => import('../views/DashboardView.vue'), meta: { title: 'Dashboard' } },
+      { path: 'profile', name: 'EmployeeProfile', component: () => import('../views/EmployeeProfileView.vue'), meta: { title: 'My profile' } },
       { path: 'intake', name: 'Intake', component: () => import('../views/IntakeView.vue'), meta: { title: 'Intake' } },
       { path: 'assets', name: 'Assets', component: () => import('../views/AssetListView.vue'), meta: { title: 'Assets' } },
       { path: 'batches', name: 'Batches', component: () => import('../views/BatchesListView.vue'), meta: { title: 'Batches' } },
@@ -38,8 +39,8 @@ const routes = [
       },
       {
         path: 'policies',
-        component: () => import('../views/PolicyWikiLayout.vue'),
-        meta: { requiresPolicyAccept: true },
+        component: () => import('../views/DocWikiLayout.vue'),
+        meta: { requiresPolicyAccept: true, docType: 'policy' },
         children: [
           { path: '', name: 'Policies', component: () => import('../views/PolicyWikiList.vue'), meta: { title: 'Policies' } },
           { path: 'all', name: 'AllPolicies', component: () => import('../views/PolicyWikiAllView.vue'), meta: { title: 'All Policies' } },
@@ -52,6 +53,23 @@ const routes = [
         name: 'PolicyEditor',
         component: () => import('../views/PolicyEditorView.vue'),
         meta: { requiresPolicyEditor: true, title: 'Edit Policy' },
+      },
+      {
+        path: 'procedures',
+        component: () => import('../views/DocWikiLayout.vue'),
+        meta: { docType: 'procedure' },
+        children: [
+          { path: '', name: 'Procedures', component: () => import('../views/ProceduresWikiList.vue'), meta: { title: 'Processes and Procedures' } },
+          { path: 'all', name: 'AllProcedures', component: () => import('../views/ProceduresWikiAllView.vue'), meta: { title: 'All Procedures' } },
+          { path: 'drafts', name: 'ProcedureDrafts', component: () => import('../views/ProcedureDraftsView.vue'), meta: { title: 'Drafts', requiresPolicyEditor: true } },
+          { path: ':slug', name: 'ProcedureDetail', component: () => import('../views/ProceduresWikiDetail.vue'), meta: { title: 'Procedure' } },
+        ],
+      },
+      {
+        path: 'procedures/edit/:slug?',
+        name: 'ProcedureEditor',
+        component: () => import('../views/ProcedureEditorView.vue'),
+        meta: { requiresPolicyEditor: true, title: 'Edit Procedure' },
       },
     ],
   },
@@ -106,7 +124,8 @@ router.beforeEach(async (to) => {
   if (to.meta.requiresPolicyEditor) {
     const { canEditPolicies } = await import('../api')
     if (!canEditPolicies(me)) {
-      return { name: 'Policies', query: { error: 'permission_denied' } }
+      const isProcedureRoute = to.path.startsWith('/employee-portal/procedures')
+      return { name: isProcedureRoute ? 'Procedures' : 'Policies', query: { error: 'permission_denied' } }
     }
   }
   return true

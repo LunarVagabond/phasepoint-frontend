@@ -25,6 +25,15 @@
   margin: 0;
 }
 
+.reports-error {
+  padding: $space-3 $space-4;
+  margin: 0 0 $space-4;
+  background: var(--color-error-bg, #fef2f2);
+  color: var(--color-error, #b91c1c);
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+}
+
 .reports-grid {
   display: grid;
   gap: $space-6;

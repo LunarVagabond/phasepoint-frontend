@@ -6,7 +6,7 @@
         <p class="subtitle">Full lifecycle and scheduling for this intake request.</p>
       </div>
       <span class="status-pill" :class="`status-${request?.status?.toLowerCase()}`" v-if="request">
-        {{ prettyStatus(request.status) }}
+        {{ currentStatusLabel }}
       </span>
     </header>
 
@@ -16,6 +16,10 @@
       <article class="card">
         <h3>Summary</h3>
         <dl class="summary-dl">
+          <dt>Request ID</dt>
+          <dd>{{ request.id }}</dd>
+          <dt>Current status</dt>
+          <dd>{{ currentStatusLabel }}</dd>
           <dt>Created</dt>
           <dd>{{ formatDate(request.created_at) }}</dd>
           <dt>Company</dt>
@@ -30,11 +34,19 @@
           <dd>{{ request.asset_quantities_display || request.asset_types_display.join(', ') || '—' }}</dd>
           <dt>Delivery</dt>
           <dd>{{ logisticsLabel(request) }}</dd>
+          <dt>Received at</dt>
+          <dd>{{ request.received_at ? formatDate(request.received_at) : '—' }}</dd>
           <dt v-if="request.status === 'REJECTED'">Rejection reason</dt>
           <dd v-if="request.status === 'REJECTED'" class="notes">{{ request.rejected_reason || '—' }}</dd>
           <dt>Customer notes</dt>
           <dd class="notes">{{ request.notes || '—' }}</dd>
         </dl>
+
+        <template v-if="isEmployeeView">
+          <hr class="summary-divider" />
+          <h4 class="internal-notes-heading">Internal Notes</h4>
+          <p class="internal-notes-body notes">{{ request.internal_notes ?? '—' }}</p>
+        </template>
 
         <div
           v-if="canEditDropoff && request.delivery_type === 'DROP_OFF' && (!request.drop_off_preferred_start && !request.drop_off_preferred_end)"
@@ -66,13 +78,79 @@
           <li v-for="ev in history" :key="ev.timestamp + ev.event_type" class="timeline-item">
             <div class="timeline-meta">
               <span class="time">{{ formatDate(ev.timestamp) }}</span>
-              <span class="event-type">{{ ev.event_type }}</span>
+              <span class="event-type">{{ getEventTypeDisplay(ev.event_type) }}</span>
               <span v-if="ev.user" class="user">by {{ ev.user }}</span>
             </div>
-            <pre class="payload">{{ formatEventDetail(ev) }}</pre>
+            <ul class="payload-readable">
+              <li v-for="(line, i) in formatEventDetailReadable(ev)" :key="i">{{ line }}</li>
+            </ul>
           </li>
         </ol>
       </article>
+
+      <article class="card assets-card">
+        <h3>Assets</h3>
+        <p v-if="requestAssets.length === 0" class="empty-history">No assets received for this request yet.</p>
+        <div v-else class="assets-table-wrap">
+          <table class="assets-table">
+            <thead>
+              <tr>
+                <th>Internal ID</th>
+                <th>Status</th>
+                <th>Serial number</th>
+                <th>Location</th>
+                <th>Intake time</th>
+                <th>Last updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="a in requestAssets"
+                :key="a.id"
+                class="asset-row"
+                @click="selectedAsset = a"
+              >
+                <td>{{ a.internal_asset_id }}</td>
+                <td>{{ a.status_display }}</td>
+                <td>{{ a.serial_number || '—' }}</td>
+                <td>{{ a.location_display }}</td>
+                <td>{{ a.intake_timestamp ? formatDate(a.intake_timestamp) : (a.created_at ? formatDate(a.created_at) : '—') }}</td>
+                <td>{{ formatDate(a.updated_at) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </div>
+
+    <div v-if="selectedAsset" class="modal-backdrop" @click.self="selectedAsset = null">
+      <div class="modal asset-detail-modal" @click.stop>
+        <div class="modal-head">
+          <h3>Asset details</h3>
+          <button type="button" class="modal-close" aria-label="Close" @click="selectedAsset = null">×</button>
+        </div>
+        <dl class="asset-detail-dl">
+          <dt>Internal ID</dt>
+          <dd>{{ selectedAsset.internal_asset_id }}</dd>
+          <dt>Status</dt>
+          <dd>{{ selectedAsset.status_display }}</dd>
+          <dt>Serial number</dt>
+          <dd>{{ selectedAsset.serial_number || '—' }}</dd>
+          <dt>Location</dt>
+          <dd>{{ selectedAsset.location_display }}</dd>
+          <dt>Manufacturer / model</dt>
+          <dd>{{ selectedAsset.manufacturer_model || '—' }}</dd>
+          <dt>Intake time</dt>
+          <dd>{{ selectedAsset.intake_timestamp ? formatDate(selectedAsset.intake_timestamp) : (selectedAsset.created_at ? formatDate(selectedAsset.created_at) : '—') }}</dd>
+          <dt>Last updated</dt>
+          <dd>{{ formatDate(selectedAsset.updated_at) }}</dd>
+          <dt>Notes</dt>
+          <dd class="notes">{{ selectedAsset.public_notes || '—' }}</dd>
+        </dl>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" @click="selectedAsset = null">Close</button>
+        </div>
+      </div>
     </div>
   </section>
 </template>
@@ -80,13 +158,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { getIntakeRequest, getIntakeRequestHistory, updateIntakeRequest, type IntakeRequestSummary } from '../api'
+import { getIntakeRequest, getIntakeRequestHistory, getIntakeRequestAssets, getEventTypeDisplay, getIntakeRequestStatusDisplay, updateIntakeRequest, type IntakeRequestSummary, type IntakeRequestAssetSummary } from '../api'
 
 const route = useRoute()
 const id = computed(() => String(route.params.id || ''))
 const loading = ref(true)
 const error = ref('')
-const request = ref<(IntakeRequestSummary & { accepted_by_username?: string | null }) | null>(null)
+const request = ref<(IntakeRequestSummary & { accepted_by_username?: string | null; internal_notes?: string }) | null>(null)
+const isEmployeeView = computed(() => String(route.path).startsWith('/employee-portal'))
+const currentStatusLabel = computed(() =>
+  request.value ? getIntakeRequestStatusDisplay(request.value) : ''
+)
 const history = ref<
   Array<{
     timestamp: string
@@ -100,6 +182,8 @@ const dropOffStart = ref('')
 const dropOffEnd = ref('')
 const savingDropoff = ref(false)
 const dropoffError = ref('')
+const requestAssets = ref<IntakeRequestAssetSummary[]>([])
+const selectedAsset = ref<IntakeRequestAssetSummary | null>(null)
 
 const canEditDropoff = computed(() => !route.meta.customerPortalReadonly)
 
@@ -126,20 +210,62 @@ function logisticsLabel(r: IntakeRequestSummary): string {
     return 'Drop-off'
   }
   if (r.pickup_scheduled_at) {
-    return `Pickup ${formatDate(r.pickup_scheduled_at)}`
+    return `Pickup scheduled for ${formatDate(r.pickup_scheduled_at)}`
   }
   return 'Pickup'
 }
 
-function formatEventDetail(ev: {
+function formatEventDetailReadable(ev: {
   old_value: unknown
   new_value: unknown
-}): string {
-  try {
-    return JSON.stringify({ old: ev.old_value, new: ev.new_value }, null, 2)
-  } catch {
-    return String(ev.new_value ?? '')
+}): string[] {
+  const lines: string[] = []
+  const oldVal = ev.old_value as Record<string, unknown> | null
+  const newVal = ev.new_value as Record<string, unknown> | null
+  if (!oldVal || !newVal) return lines
+
+  const fmt = (v: unknown): string => {
+    if (v == null || v === '') return '—'
+    if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) {
+      try {
+        return new Date(v).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+      } catch {
+        return String(v)
+      }
+    }
+    return String(v)
   }
+
+  if (oldVal.status !== newVal.status) {
+    lines.push(`Status: ${fmt(oldVal.status).replace(/_/g, ' ')} → ${fmt(newVal.status).replace(/_/g, ' ')}`)
+  }
+  if (oldVal.rejected_reason !== newVal.rejected_reason) {
+    const label = 'Rejection reason'
+    if (newVal.rejected_reason) lines.push(`${label}: ${fmt(newVal.rejected_reason)}`)
+    else lines.push(`${label}: (cleared)`)
+  }
+  if (oldVal.pickup_scheduled_at !== newVal.pickup_scheduled_at) {
+    if (newVal.pickup_scheduled_at) lines.push(`Pickup scheduled: ${fmt(newVal.pickup_scheduled_at)}`)
+    else lines.push('Pickup scheduled: (cleared)')
+  }
+  const dropStartOld = oldVal.drop_off_preferred_start
+  const dropEndOld = oldVal.drop_off_preferred_end
+  const dropStartNew = newVal.drop_off_preferred_start
+  const dropEndNew = newVal.drop_off_preferred_end
+  if (dropStartOld !== dropStartNew || dropEndOld !== dropEndNew) {
+    if (dropStartNew || dropEndNew) {
+      lines.push(`Drop-off window: ${fmt(dropStartNew)} – ${fmt(dropEndNew)}`)
+    } else {
+      lines.push('Drop-off window: (cleared)')
+    }
+  }
+  if (isEmployeeView.value && oldVal.internal_notes !== newVal.internal_notes) {
+    const label = 'Internal notes'
+    if (newVal.internal_notes) lines.push(`${label}: ${fmt(newVal.internal_notes)}`)
+    else lines.push(`${label}: (cleared)`)
+  }
+
+  return lines.length ? lines : ['No visible changes']
 }
 
 async function load() {
@@ -150,7 +276,12 @@ async function load() {
       throw new Error('Missing request id.')
     }
     request.value = await getIntakeRequest(id.value)
-    history.value = await getIntakeRequestHistory(id.value)
+    const [historyData, assetsData] = await Promise.all([
+      getIntakeRequestHistory(id.value),
+      getIntakeRequestAssets(id.value),
+    ])
+    history.value = historyData
+    requestAssets.value = assetsData
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load request.'
   } finally {
@@ -169,6 +300,7 @@ async function saveDropoff() {
     const updated = await updateIntakeRequest(request.value.id, payload)
     request.value = { ...request.value, ...updated }
     history.value = await getIntakeRequestHistory(request.value.id)
+    requestAssets.value = await getIntakeRequestAssets(request.value.id)
   } catch (e) {
     dropoffError.value = e instanceof Error ? e.message : 'Failed to save drop-off window.'
   } finally {
@@ -218,6 +350,8 @@ onMounted(() => {
 .status-pending { background: #fef3c7; color: #92400e; }
 .status-seen { background: #dbeafe; color: #1d4ed8; }
 .status-accepted { background: #dcfce7; color: #166534; }
+.status-picking_up { background: #e0e7ff; color: #3730a3; }
+.status-received { background: #ccfbf1; color: #0f766e; }
 .status-completed { background: #ccfbf1; color: #0f766e; }
 .status-rejected { background: #fee2e2; color: #b91c1c; }
 
@@ -260,6 +394,23 @@ onMounted(() => {
   white-space: pre-wrap;
 }
 
+.summary-divider {
+  margin: $space-4 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.internal-notes-heading {
+  margin: 0 0 $space-2;
+  font-size: $font-size-base;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.internal-notes-body {
+  margin: 0;
+}
+
 .timeline {
   list-style: none;
   margin: 0;
@@ -286,22 +437,23 @@ onMounted(() => {
 }
 
 .event-type {
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-weight: 600;
 }
 
 .user {
   font-style: italic;
 }
 
-.payload {
+.payload-readable {
   margin: $space-1 0 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-  font-size: 0.75rem;
-  background: var(--color-background);
-  border-radius: $radius-md;
-  padding: $space-2 $space-3;
-  overflow-x: auto;
+  padding-left: $space-4;
+  font-size: $font-size-sm;
+  line-height: 1.5;
+  list-style: disc;
+}
+
+.payload-readable li {
+  margin-bottom: $space-1;
 }
 
 .empty-history {
@@ -325,6 +477,87 @@ onMounted(() => {
 .inline-error {
   margin: $space-1 0 0;
   color: var(--color-error);
+}
+
+.assets-card {
+  grid-column: 1 / -1;
+}
+
+.assets-table-wrap {
+  overflow-x: auto;
+}
+
+.assets-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: $font-size-sm;
+}
+
+.assets-table th,
+.assets-table td {
+  padding: $space-2 $space-3;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.assets-table th {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.asset-row {
+  cursor: pointer;
+}
+
+.asset-row:hover {
+  background: var(--color-background);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.asset-detail-modal .modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $space-4;
+}
+
+.asset-detail-modal .modal-head h3 {
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  padding: 0 $space-1;
+  line-height: 1;
+}
+
+.asset-detail-dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: $space-1 $space-4;
+  margin: 0 0 $space-4;
+}
+
+.asset-detail-dl dt {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.asset-detail-dl dd {
+  margin: 0;
 }
 
 @media (max-width: 900px) {

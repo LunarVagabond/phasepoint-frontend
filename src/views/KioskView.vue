@@ -1,6 +1,6 @@
 <template>
   <div class="kiosk-view">
-    <!-- Unlock: scan badge (user UUID or employee_id) -->
+    <!-- Unlock: scan badge (user UUID) -->
     <template v-if="!unlocked">
       <header class="kiosk-header">
         <h1 class="kiosk-title">Kiosk</h1>
@@ -12,7 +12,7 @@
             v-model="badgeInput"
             type="text"
             class="kiosk-input"
-            placeholder="Badge / user UUID or employee ID"
+            placeholder="Badge / user UUID"
             autocomplete="off"
             autofocus
             :disabled="unlockSubmitting"
@@ -37,6 +37,15 @@
       <main class="kiosk-main">
         <p v-if="config" class="kiosk-hint">Scan or enter asset UUID / internal asset ID to confirm a custody move.</p>
         <form v-if="config" class="kiosk-scan-form" @submit.prevent="onScan">
+          <div v-if="showReleaseDestination" class="kiosk-release-row">
+            <label for="kiosk-release-dest">Release destination (for ship)</label>
+            <select id="kiosk-release-dest" v-model="releaseDestination" class="kiosk-select">
+              <option value="">— Select —</option>
+              <option value="Re-sale">Re-sale</option>
+              <option value="Recycler">Recycler</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
           <input
             v-model="assetInput"
             type="text"
@@ -82,9 +91,15 @@ const unlockSubmitting = ref(false)
 const unlockError = ref('')
 
 const assetInput = ref('')
+const releaseDestination = ref('')
 const submitting = ref(false)
 const scanError = ref('')
 const scanSuccess = ref('')
+
+const showReleaseDestination = computed(() => {
+  const transitions = config.value?.allowed_transitions ?? []
+  return transitions.some((code: string) => code.split('|')[3] === 'SHIPPED')
+})
 
 let idleTimer: ReturnType<typeof setTimeout> | null = null
 const activityEvents = ['mousedown', 'mousemove', 'keydown', 'click', 'touchstart', 'scroll'] as const
@@ -151,13 +166,16 @@ async function onScan() {
   scanSuccess.value = ''
   submitting.value = true
   try {
-    const payload: { asset_id?: string; asset_internal_id?: string; kiosk_id?: string } = {
+    const payload: { asset_id?: string; asset_internal_id?: string; kiosk_id?: string; release_destination?: string } = {
       kiosk_id: kioskId,
     }
     if (isUuid(raw)) {
       payload.asset_id = raw
     } else {
       payload.asset_internal_id = raw
+    }
+    if (releaseDestination.value) {
+      payload.release_destination = releaseDestination.value
     }
     const result = await scanConfirm(payload)
     scanSuccess.value = `Confirmed: asset moved to ${result.new_status} @ ${result.new_location}.`

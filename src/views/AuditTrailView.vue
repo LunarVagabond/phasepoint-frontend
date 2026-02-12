@@ -15,7 +15,7 @@
     <div v-if="selectedEvent" class="modal-backdrop" @click.self="selectedEvent = null">
       <div class="modal audit-detail-modal" @click.stop>
         <div class="modal-head">
-          <h2 class="modal-title">{{ selectedEvent.event_type }}</h2>
+          <h2 class="modal-title">{{ getEventTypeDisplay(selectedEvent.event_type) }}</h2>
           <button type="button" class="modal-close" aria-label="Close" @click="selectedEvent = null">×</button>
         </div>
         <div class="detail-grid">
@@ -25,7 +25,7 @@
           </div>
           <div class="detail-item">
             <span class="detail-label">Event type</span>
-            <span class="detail-value">{{ selectedEvent.event_type }}</span>
+            <span class="detail-value">{{ getEventTypeDisplay(selectedEvent.event_type) }}</span>
           </div>
           <div class="detail-item">
             <span class="detail-label">Asset ID</span>
@@ -58,7 +58,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { getAuditEvents } from '../api'
+import { getAuditEvents, getEventTypeDisplay } from '../api'
 import DataTable from '../components/DataTable.vue'
 import type { AuditEventSummary } from '../api'
 import type { DataTableColumn } from '../components/DataTable.vue'
@@ -69,7 +69,7 @@ const selectedEvent = ref<AuditEventSummary | null>(null)
 
 const auditColumns: DataTableColumn[] = [
   { key: 'timestamp_display', label: 'Time', type: 'strong' },
-  { key: 'event_type', label: 'Event' },
+  { key: 'event_type_display', label: 'Event' },
   { key: 'asset_id', label: 'Asset ID' },
   { key: 'user_username', label: 'User' },
 ]
@@ -78,6 +78,7 @@ const tableData = computed(() =>
   events.value.map((e) => ({
     ...e,
     timestamp_display: formatDate(e.timestamp),
+    event_type_display: getEventTypeDisplay(e.event_type),
     user_username: e.user_username ?? e.user_id ?? null,
   }))
 )

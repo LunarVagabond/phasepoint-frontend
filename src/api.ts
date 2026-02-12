@@ -23,7 +23,6 @@ export interface MeResponse {
   id: string
   username: string
   email: string
-  employee_id: string
   is_staff?: boolean
   acknowledged_bundle_hash: string | null
   current_bundle_hash: string
@@ -36,7 +35,6 @@ export interface MeResponse {
 export interface CustomerSummary {
   id: string
   name: string
-  code: string
   email: string
   phone: string
   address: string
@@ -79,7 +77,19 @@ export async function getCustomers(): Promise<CustomerSummary[]> {
   return r.json()
 }
 
-export async function createCustomer(data: { name: string; code?: string }): Promise<CustomerSummary> {
+export async function createCustomer(data: {
+  name: string
+  email?: string
+  phone?: string
+  address?: string
+  address_line1?: string
+  address_line2?: string
+  city?: string
+  province?: string
+  country?: string
+  postal_code?: string
+  notes?: string
+}): Promise<CustomerSummary> {
   const r = await request('/customers/create/', { method: 'POST', body: JSON.stringify(data) })
   if (!r.ok) throw new Error(await r.text())
   return r.json()
@@ -87,7 +97,19 @@ export async function createCustomer(data: { name: string; code?: string }): Pro
 
 export async function updateCustomer(
   id: string,
-  data: { name?: string; code?: string; email?: string; phone?: string; address?: string; notes?: string }
+  data: {
+    name?: string
+    email?: string
+    phone?: string
+    address?: string
+    address_line1?: string
+    address_line2?: string
+    city?: string
+    province?: string
+    country?: string
+    postal_code?: string
+    notes?: string
+  }
 ): Promise<CustomerSummary> {
   const r = await request(`/customers/${id}/`, { method: 'PATCH', body: JSON.stringify(data) })
   if (!r.ok) throw new Error(await r.text())
@@ -275,9 +297,153 @@ export async function acknowledgePolicies(bundleHash: string): Promise<{ status:
   return r.json()
 }
 
+// --- Procedures (Processes and Procedures) ---
+
+export interface ProcedureSummary {
+  id: string
+  name: string
+  slug: string
+  version: string
+  effective_date: string
+  owner: string
+  status: string
+}
+
+export interface ProcedureDetail extends ProcedureSummary {
+  document_control_id: string
+  body: string
+  created_at: string
+  updated_at: string
+}
+
+export interface ProcedureVersion {
+  id: string
+  slug: string
+  version: string
+  effective_date: string
+  status: string
+  created_at: string
+}
+
+export async function getProcedures(): Promise<ProcedureSummary[]> {
+  const r = await request('/procedures/')
+  if (!r.ok) throw new Error('Failed to get procedures')
+  return r.json()
+}
+
+export async function getDraftProcedures(): Promise<ProcedureSummary[]> {
+  const r = await request('/procedures/drafts/')
+  if (!r.ok) throw new Error('Failed to get procedure drafts')
+  return r.json()
+}
+
+export async function getProcedure(slug: string, version?: string): Promise<ProcedureDetail> {
+  const url = version ? `/procedures/${slug}/?v=${encodeURIComponent(version)}` : `/procedures/${slug}/`
+  const r = await request(url)
+  if (!r.ok) throw new Error('Failed to get procedure')
+  return r.json()
+}
+
+export async function getProcedureVersions(slug: string): Promise<ProcedureVersion[]> {
+  const r = await request(`/procedures/${slug}/versions/`)
+  if (!r.ok) throw new Error('Failed to get procedure versions')
+  return r.json()
+}
+
+export interface ProcedureCreateData {
+  name: string
+  slug: string
+  version?: string
+  effective_date: string
+  owner?: string
+  document_control_id?: string
+  body: string
+  status?: string
+}
+
+export async function createProcedure(data: ProcedureCreateData): Promise<ProcedureDetail> {
+  const r = await request('/procedures/create/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  if (!r.ok) {
+    const text = await r.text()
+    throw new Error(text || 'Failed to create procedure')
+  }
+  return r.json()
+}
+
+export interface ProcedureUpdateData {
+  name?: string
+  slug?: string
+  version?: string
+  effective_date?: string
+  owner?: string
+  document_control_id?: string
+  body?: string
+  status?: string
+}
+
+export async function updateProcedure(id: string, data: ProcedureUpdateData): Promise<ProcedureDetail> {
+  const r = await request(`/procedures/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+  if (!r.ok) {
+    const text = await r.text()
+    throw new Error(text || 'Failed to update procedure')
+  }
+  return r.json()
+}
+
+export async function deleteProcedure(id: string): Promise<void> {
+  const r = await request(`/procedures/${id}/`, {
+    method: 'DELETE',
+  })
+  if (!r.ok) {
+    const text = await r.text()
+    throw new Error(text || 'Failed to delete procedure')
+  }
+}
+
+export async function archiveProcedure(id: string): Promise<ProcedureDetail> {
+  return updateProcedure(id, { status: 'archived' })
+}
+
+export async function getProcedurePrint(slug?: string, version?: string): Promise<string> {
+  let url = slug ? `/procedures/${slug}/print/` : '/procedures/print/'
+  if (slug && version) {
+    url += `?v=${encodeURIComponent(version)}`
+  }
+  const r = await request(url)
+  if (!r.ok) throw new Error('Failed to get procedure print')
+  return r.text()
+}
+
+export function canEditProcedures(user?: MeResponse): boolean {
+  return user?.groups_display?.some(g => g.toLowerCase() === 'operations') ?? false
+}
+
 export async function getMe(): Promise<MeResponse> {
   const r = await request('/me/')
   if (!r.ok) throw new Error('Not authenticated')
+  return r.json()
+}
+
+export async function getEmployeeProfile(): Promise<EmployeeProfile> {
+  const r = await request('/me/profile/')
+  if (!r.ok) throw new Error('Failed to load profile')
+  return r.json()
+}
+
+export async function updateEmployeeProfile(data: {
+  email: string
+  first_name?: string
+  last_name?: string
+  phone?: string
+}): Promise<EmployeeProfile> {
+  const r = await request('/me/profile/', { method: 'PATCH', body: JSON.stringify(data) })
+  if (!r.ok) throw new Error(await r.text())
   return r.json()
 }
 
@@ -287,12 +453,21 @@ export interface UserSummary {
   email: string
   first_name: string
   last_name: string
-  employee_id: string
+  phone: string
   is_active: boolean
   is_staff: boolean
   user_type: 'CUSTOMER' | 'EMPLOYEE'
   customer: string | null
   groups_display: string[]
+}
+
+export interface EmployeeProfile {
+  id: string
+  username: string
+  email: string
+  first_name: string
+  last_name: string
+  phone: string
 }
 
 export interface GroupSummary {
@@ -334,7 +509,14 @@ export async function getOwnerChoices(): Promise<OwnerChoicesResponse> {
   return r.json()
 }
 
-export async function createUser(data: { username: string; password: string; email?: string; employee_id?: string }): Promise<UserSummary> {
+export async function createUser(data: {
+  username: string
+  password: string
+  email?: string
+  first_name?: string
+  last_name?: string
+  phone?: string
+}): Promise<UserSummary> {
   const r = await request('/users/create/', { method: 'POST', body: JSON.stringify(data) })
   if (!r.ok) throw new Error(await r.text())
   return r.json()
@@ -521,7 +703,18 @@ export async function updateCustomerMyProfile(data: {
 export async function getCustomerContext(customerId: string): Promise<{
   customer: CustomerProfile
   users: UserSummary[]
-  requests: Array<{ id: string; status: string; asset_quantities: Record<string, number>; created_at: string; updated_at: string }>
+  requests: Array<{
+    id: string
+    status: string
+    asset_quantities: Record<string, number>
+    delivery_type?: string
+    pickup_scheduled_at?: string | null
+    drop_off_preferred_start?: string | null
+    drop_off_preferred_end?: string | null
+    received_at?: string | null
+    created_at: string
+    updated_at: string
+  }>
   sustainability: { total_weight_kg: number; recycled_weight_kg: number; disposed_weight_kg: number; reused_weight_kg: number }
 }> {
   const r = await request(`/customers/${customerId}/context/`)
@@ -529,7 +722,10 @@ export async function getCustomerContext(customerId: string): Promise<{
   return r.json()
 }
 
-export async function updateUser(id: string, data: { email?: string; employee_id?: string; is_active?: boolean; is_staff?: boolean; groups?: number[] }): Promise<UserSummary> {
+export async function updateUser(
+  id: string,
+  data: { email?: string; first_name?: string; last_name?: string; phone?: string; is_active?: boolean; is_staff?: boolean; groups?: number[] }
+): Promise<UserSummary> {
   const r = await request(`/users/${id}/`, { method: 'PATCH', body: JSON.stringify(data) })
   if (!r.ok) throw new Error(await r.text())
   return r.json()
@@ -632,12 +828,26 @@ export interface AssetDetail extends AssetSummary {
   intake_employee: string | null
   intake_employee_username?: string | null
   intake_batch_id?: string | null
+  internal_notes?: string
+  public_notes?: string
   updated_at: string
 }
 
 export async function getAsset(id: string): Promise<AssetDetail> {
   const r = await request(`/assets/${id}/`)
   if (!r.ok) throw new Error('Failed to get asset')
+  return r.json()
+}
+
+export async function updateAsset(
+  id: string,
+  data: { internal_notes?: string; public_notes?: string }
+): Promise<AssetDetail> {
+  const r = await request(`/assets/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+  if (!r.ok) throw new Error('Failed to update asset')
   return r.json()
 }
 
@@ -653,7 +863,8 @@ export const ASSET_LOCATIONS = [
 export interface CustodyRequestSummary {
   id: string
   asset: string
-  asset_internal_id: string | null
+  asset_internal_id?: string | null
+  asset_internal_id_display?: string | null
   from_location: string
   to_location: string
   intended_action: string
@@ -663,6 +874,7 @@ export interface CustodyRequestSummary {
   requested_by_username: string | null
   completed_by: string | null
   completed_at: string | null
+  release_destination?: string
 }
 
 export async function getCustodyRequests(params?: { asset_id?: string; status?: string; mine?: boolean }): Promise<CustodyRequestSummary[]> {
@@ -682,7 +894,18 @@ export async function cancelCustodyRequest(requestId: string): Promise<{ status:
   return r.json()
 }
 
-export async function createCustodyRequest(data: { asset_id: string; to_location: string; intended_action: string }): Promise<CustodyRequestSummary> {
+export interface CreateCustodyRequestPayload {
+  asset_id: string
+  to_location: string
+  intended_action: string
+  sanitization_result?: 'PASS' | 'FAIL'
+  sanitization_method?: string
+  sanitization_tool_used?: string
+  destroy_without_wipe?: boolean
+  release_destination?: string
+}
+
+export async function createCustodyRequest(data: CreateCustodyRequestPayload): Promise<CustodyRequestSummary> {
   const r = await request('/custody-requests/', { method: 'POST', body: JSON.stringify(data) })
   if (!r.ok) throw new Error(await r.text())
   return r.json()
@@ -700,6 +923,7 @@ export async function scanConfirm(data: {
   asset_id?: string
   asset_internal_id?: string
   kiosk_id?: string
+  release_destination?: string
 }): Promise<ScanConfirmResponse> {
   const r = await request('/custody-requests/scan-confirm/', { method: 'POST', body: JSON.stringify(data) })
   if (!r.ok) {
@@ -741,6 +965,59 @@ export async function getKpis(format: 'json' | 'csv' | 'pdf' = 'json'): Promise<
   if (!r.ok) throw new Error('Failed to get KPI report')
   if (format === 'json') return r.json()
   return r.blob()
+}
+
+/** Map internal audit event_type (enum) to customer-facing display text. Use everywhere we show event types to users. */
+export const AUDIT_EVENT_TYPE_DISPLAY: Record<string, string> = {
+  INTAKE_REQUEST_CREATED: 'Request submitted',
+  INTAKE_REQUEST_UPDATED: 'Request updated',
+  ASSET_INTAKE: 'Asset received',
+  CUSTODY_REQUEST_CREATED: 'Custody request created',
+  CUSTODY_TRANSFER: 'Custody transfer',
+  CUSTODY_REQUEST_CANCELLED: 'Custody request cancelled',
+  SANITIZATION_RECORD: 'Sanitization recorded',
+  RELEASE_RECORDED: 'Release recorded',
+  DESTRUCTION_CONFIRMED: 'Destruction confirmed',
+  CUSTOMER_CREATED: 'Customer created',
+  CUSTOMER_UPDATED: 'Customer updated',
+  UNKNOWN: 'System event',
+}
+
+export function getEventTypeDisplay(eventType: string): string {
+  return AUDIT_EVENT_TYPE_DISPLAY[eventType] ?? eventType.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+/** Map intake request status to customer-facing display. Use for Summary "Current status" and history. */
+export const INTAKE_REQUEST_STATUS_DISPLAY: Record<string, string> = {
+  PENDING: 'Processing',
+  SEEN: 'Processing',
+  ACCEPTED: 'Accepted',
+  PICKING_UP: 'Pickup in progress',
+  RECEIVED: 'Received',
+  COMPLETED: 'Completed',
+  REJECTED: 'Rejected',
+}
+
+export function getIntakeRequestStatusDisplay(r: {
+  status: string
+  delivery_type?: string
+  pickup_scheduled_at?: string | null
+  drop_off_preferred_start?: string | null
+  drop_off_preferred_end?: string | null
+}): string {
+  const status = r.status || ''
+  if (status === 'REJECTED') return INTAKE_REQUEST_STATUS_DISPLAY.REJECTED ?? 'Rejected'
+  if (status === 'PICKING_UP') return INTAKE_REQUEST_STATUS_DISPLAY.PICKING_UP ?? 'Pickup in progress'
+  if (status === 'RECEIVED') return INTAKE_REQUEST_STATUS_DISPLAY.RECEIVED ?? 'Received'
+  if (status === 'COMPLETED') return INTAKE_REQUEST_STATUS_DISPLAY.COMPLETED ?? 'Completed'
+  if (status === 'PENDING' || status === 'SEEN') return INTAKE_REQUEST_STATUS_DISPLAY[status] ?? 'Processing'
+  if (status === 'ACCEPTED') {
+    const type = r.delivery_type || 'PICKUP'
+    if (type === 'PICKUP' && r.pickup_scheduled_at) return 'Scheduled for pickup'
+    if (type === 'DROP_OFF' && (r.drop_off_preferred_start || r.drop_off_preferred_end)) return 'Scheduled for drop-off'
+    return INTAKE_REQUEST_STATUS_DISPLAY.ACCEPTED ?? 'Accepted'
+  }
+  return INTAKE_REQUEST_STATUS_DISPLAY[status] ?? status.replace(/_/g, ' ')
 }
 
 export interface AuditEventSummary {
@@ -803,6 +1080,8 @@ export interface IntakeRequestSummary {
   drop_off_preferred_end?: string | null
   created_at: string
   updated_at: string
+  received_at?: string | null
+  received_quantities?: Record<string, number>
 }
 
 export async function intakeRequestCustomerSearch(q: string): Promise<IntakeRequestCustomerSearchHit[]> {
@@ -893,13 +1172,17 @@ export async function getCustomerTerms(): Promise<{ title: string; content: stri
 
 export async function getIntakeRequests(params?: {
   status?: string
+  customer_id?: string
   search?: string
   ordering?: string
+  available_for_receive?: boolean
 }): Promise<IntakeRequestSummary[]> {
   const q = new URLSearchParams()
   if (params?.status) q.set('status', params.status)
+  if (params?.customer_id) q.set('customer_id', params.customer_id)
   if (params?.search) q.set('search', params.search)
   if (params?.ordering) q.set('ordering', params.ordering)
+  if (params?.available_for_receive) q.set('available_for_receive', '1')
   const suffix = q.toString() ? '?' + q.toString() : ''
   const r = await request(`/intake-requests/${suffix}`)
   if (!r.ok) throw new Error('Failed to get intake requests')
@@ -909,6 +1192,73 @@ export async function getIntakeRequests(params?: {
 export async function getIntakeRequest(id: string): Promise<IntakeRequestSummary & { accepted_by_username?: string | null }> {
   const r = await request(`/intake-requests/${id}/`)
   if (!r.ok) throw new Error('Failed to get intake request')
+  return r.json()
+}
+
+export interface IntakeRequestAssetSummary {
+  id: string
+  internal_asset_id: string
+  status: string
+  status_display: string
+  serial_number: string
+  location: string
+  location_display: string
+  intake_timestamp: string | null
+  created_at: string
+  updated_at: string
+  manufacturer_model: string
+  public_notes: string
+  /** Present only for employee users; omitted for customers */
+  internal_notes?: string
+}
+
+export async function getIntakeRequestAssets(requestId: string): Promise<IntakeRequestAssetSummary[]> {
+  const r = await request(`/intake-requests/${requestId}/assets/`)
+  if (!r.ok) throw new Error('Failed to get request assets')
+  return r.json()
+}
+
+export async function startIntakeForRequest(requestId: string): Promise<IntakeRequestSummary & { accepted_by_username?: string | null }> {
+  const r = await request(`/intake-requests/${requestId}/start-intake/`, { method: 'POST' })
+  if (!r.ok) {
+    const text = await r.text()
+    let msg = text
+    try {
+      const j = JSON.parse(text)
+      if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)
+    } catch {
+      // use text
+    }
+    throw new Error(msg)
+  }
+  return r.json()
+}
+
+export interface ReceiveAssetForRequestResponse {
+  asset: Record<string, unknown>
+  request: IntakeRequestSummary & { accepted_by_username?: string | null; received_quantities?: Record<string, number> }
+}
+
+export async function receiveAssetForRequest(
+  requestId: string,
+  payload: { asset_type: string; serial_number?: string; manufacturer_model?: string }
+): Promise<ReceiveAssetForRequestResponse> {
+  await ensureCsrfCookie()
+  const r = await request(`/intake-requests/${requestId}/receive-asset/`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+  if (!r.ok) {
+    const text = await r.text()
+    let msg = text
+    try {
+      const j = JSON.parse(text)
+      if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)
+    } catch {
+      // use text
+    }
+    throw new Error(msg)
+  }
   return r.json()
 }
 

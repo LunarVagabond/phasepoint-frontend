@@ -61,23 +61,3 @@ async function handlePrint() {
 }
 </script>
 
-<style scoped>
-.footer-actions {
-  margin-bottom: 16px;
-}
-
-.print-btn {
-  padding: 8px 16px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9em;
-}
-
-.print-btn:hover {
-  background: #0056b3;
-}
-</style>
-

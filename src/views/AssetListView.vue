@@ -12,6 +12,14 @@
         placeholder="Search by ID, serial, customer, status, location…"
         aria-label="Search assets"
       />
+      <button
+        v-if="!intakeBatchId"
+        type="button"
+        class="btn-add-in-header"
+        @click="showAddAssetModal = true"
+      >
+        <span class="add-icon">+</span> Add asset
+      </button>
     </div>
     <div v-if="intakeBatchId" class="bulk-actions-bar">
       <label class="bulk-label">Move selected to</label>
@@ -40,34 +48,47 @@
       :show-selection="!!intakeBatchId"
       :selected-row-keys="Array.from(selectedAssetIds)"
       @update:selected-row-keys="selectedAssetIds = new Set($event)"
-    >
-      <template #add-row>
-        <tr v-if="!intakeBatchId" class="add-row">
-          <td class="add-label" colspan="2">
-            <span class="add-icon">+</span> Intake asset
-          </td>
-          <td>
-            <input v-model="form.manufacturer_model" placeholder="Manufacturer / model" />
-          </td>
-          <td>
-            <input v-model="form.serial_number" placeholder="Serial number" />
-          </td>
-          <td>
+    />
+
+    <div v-if="showAddAssetModal" class="modal-backdrop" @click.self="closeAddAssetModal">
+      <div class="modal" @click.stop>
+        <h3>Add asset</h3>
+        <div class="modal-form">
+          <div class="form-row">
+            <label>Manufacturer / model</label>
+            <input
+              v-model="form.manufacturer_model"
+              type="text"
+              class="text-input"
+              placeholder="Manufacturer / model"
+            />
+          </div>
+          <div class="form-row">
+            <label>Serial number</label>
+            <input
+              v-model="form.serial_number"
+              type="text"
+              class="text-input"
+              placeholder="Serial number"
+            />
+          </div>
+          <div class="form-row">
+            <label>Customer</label>
             <select v-model="form.customer_id" class="customer-select">
               <option value="">— Customer —</option>
               <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
-          </td>
-          <td class="add-actions">
-            <button type="button" class="btn-add" :disabled="submitting" @click="onSubmit">
-              {{ submitting ? 'Adding…' : 'Add' }}
-            </button>
-            <span v-if="addError" class="error-inline">{{ addError }}</span>
-            <span v-else-if="lastCreatedId" class="success-inline">Added {{ lastCreatedId }}</span>
-          </td>
-        </tr>
-      </template>
-    </DataTable>
+          </div>
+          <p v-if="addError" class="modal-error">{{ addError }}</p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" @click="closeAddAssetModal">Cancel</button>
+          <button type="button" class="btn-primary" :disabled="submitting" @click="onSubmit">
+            {{ submitting ? 'Adding…' : 'Add' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <div v-if="detailAssetId" class="modal-backdrop" @click.self="closeDetail">
       <div class="modal asset-detail-modal" @click.stop>
@@ -110,18 +131,97 @@
             </div>
           </div>
 
+          <section v-if="detailAsset.location === 'WIPE_STATION'" class="detail-section">
+            <h3 class="detail-section-title">Sanitization result</h3>
+            <p class="detail-section-desc">Record the wipe result. Pass → Clean Cage; Fail → Destruction.</p>
+            <div class="request-form sanitization-form">
+              <div class="form-row">
+                <label>Result</label>
+                <div class="radio-row">
+                  <label class="radio-label">
+                    <input v-model="sanitizationResult" type="radio" value="PASS" />
+                    Pass
+                  </label>
+                  <label class="radio-label">
+                    <input v-model="sanitizationResult" type="radio" value="FAIL" />
+                    Fail
+                  </label>
+                </div>
+              </div>
+              <div class="form-row">
+                <label>Method (optional)</label>
+                <input v-model="sanitizationMethod" type="text" class="text-input" placeholder="e.g. NIST wipe" />
+              </div>
+              <div class="form-row">
+                <label>Tool used (optional)</label>
+                <input v-model="sanitizationToolUsed" type="text" class="text-input" placeholder="e.g. Blanco" />
+              </div>
+              <p class="form-hint">Destination: {{ sanitizationResult === 'PASS' ? 'Clean Cage' : sanitizationResult === 'FAIL' ? 'Destruction' : '—' }}</p>
+            </div>
+          </section>
+
+          <section class="detail-section">
+            <h3 class="detail-section-title">Notes</h3>
+            <div class="notes-form" :class="{ 'notes-form--saved': notesShowSavedFlash }">
+              <div class="form-row">
+                <label>Internal notes</label>
+                <textarea
+                  v-model="internalNotes"
+                  class="text-input notes-textarea"
+                  placeholder="Internal notes (not shown to customers)"
+                  rows="2"
+                />
+              </div>
+              <div class="form-row">
+                <label>Public notes</label>
+                <textarea
+                  v-model="publicNotes"
+                  class="text-input notes-textarea"
+                  placeholder="Notes visible to the customer"
+                  rows="2"
+                />
+              </div>
+            </div>
+          </section>
+
           <section class="detail-section">
             <h3 class="detail-section-title">Request move</h3>
             <p class="detail-section-desc">Create a custody request to move this asset. The move will be completed when the asset is scanned at the target location (e.g. at a kiosk).</p>
             <div class="request-form">
-              <select v-model="requestToLocation" class="request-select">
+              <select
+                v-model="requestToLocation"
+                class="request-select"
+                :disabled="detailAsset.location === 'WIPE_STATION' && !!sanitizationResult"
+              >
                 <option value="">— Select destination —</option>
-                <option v-for="loc in ASSET_LOCATIONS" :key="loc.value" :value="loc.value">{{ loc.label }}</option>
+                <template v-if="detailAsset.location === 'WIPE_STATION' && sanitizationResult">
+                  <option v-if="sanitizationResult === 'PASS'" value="CLEAN_CAGE">Clean Cage</option>
+                  <option v-if="sanitizationResult === 'FAIL'" value="DESTRUCTION">Destruction</option>
+                </template>
+                <option v-else v-for="loc in allowedDestinations" :key="loc.value" :value="loc.value">{{ loc.label }}</option>
               </select>
+              <div v-if="requestToLocation === 'SHIPPED'" class="form-row">
+                <label>Release destination</label>
+                <select v-model="releaseDestination" class="request-select">
+                  <option value="">— Select —</option>
+                  <option value="Re-sale">Re-sale</option>
+                  <option value="Recycler">Recycler</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div
+                v-if="(detailAsset.location === 'DIRTY_CAGE' || detailAsset.location === 'INTAKE') && requestToLocation === 'DESTRUCTION'"
+                class="form-row checkbox-row"
+              >
+                <label class="checkbox-label">
+                  <input v-model="destroyWithoutWipe" type="checkbox" />
+                  Destroy without data wipe (record direct-to-destruction)
+                </label>
+              </div>
               <button
                 type="button"
                 class="btn-primary"
-                :disabled="!requestToLocation || requestSubmitting"
+                :disabled="!canSubmitRequest || requestSubmitting"
                 @click="submitRequest"
               >
                 {{ requestSubmitting ? 'Submitting…' : 'Request move' }}
@@ -147,7 +247,7 @@
             <h3 class="detail-section-title">History (audit log)</h3>
             <ul v-if="assetAuditEvents.length" class="request-list">
               <li v-for="ev in assetAuditEvents" :key="ev.id" class="request-item">
-                <span class="request-item-loc">{{ ev.event_type }}</span>
+                <span class="request-item-loc">{{ getEventTypeDisplay(ev.event_type) }}</span>
                 <span class="request-item-meta">{{ formatDate(ev.timestamp) }}</span>
               </li>
             </ul>
@@ -176,6 +276,7 @@ import {
   getCustomers,
   createAsset,
   getAsset,
+  updateAsset,
   getCustodyRequests,
   createCustodyRequest,
   getIntakeBatch,
@@ -183,6 +284,7 @@ import {
   ASSET_LOCATIONS,
 } from '../api'
 import DataTable from '../components/DataTable.vue'
+import { getEventTypeDisplay } from '../api'
 import type { AssetSummary, AssetDetail, CustodyRequestSummary, IntakeBatchSummary } from '../api'
 import type { DataTableColumn } from '../components/DataTable.vue'
 
@@ -199,6 +301,7 @@ const assetColumns: DataTableColumn[] = [
   { key: 'intake_employee_username', label: 'Intake by' },
 ]
 
+const showAddAssetModal = ref(false)
 const searchQuery = ref('')
 const assets = ref<AssetSummary[]>([])
 const customers = ref<Awaited<ReturnType<typeof getCustomers>>>([])
@@ -236,6 +339,27 @@ const requestToLocation = ref('')
 const requestSubmitting = ref(false)
 const requestError = ref('')
 const requestSuccess = ref('')
+const sanitizationResult = ref<'PASS' | 'FAIL' | ''>('')
+const sanitizationMethod = ref('')
+const sanitizationToolUsed = ref('')
+const releaseDestination = ref('')
+const destroyWithoutWipe = ref(false)
+const internalNotes = ref('')
+const publicNotes = ref('')
+const notesShowSavedFlash = ref(false)
+let notesDebounceTimer: ReturnType<typeof setTimeout> | null = null
+const NOTES_DEBOUNCE_MS = 700
+
+const isWipeStation = computed(() => detailAsset.value?.location === 'WIPE_STATION')
+const allowedDestinations = computed(() => {
+  if (isWipeStation.value) return []
+  return ASSET_LOCATIONS
+})
+const canSubmitRequest = computed(() => {
+  if (!requestToLocation.value || requestSubmitting.value) return false
+  if (isWipeStation.value && !sanitizationResult.value) return false
+  return true
+})
 
 const intakeBatchId = computed(() => (route.query.intake_batch as string) || null)
 const intakeBatch = ref<IntakeBatchSummary | null>(null)
@@ -314,6 +438,17 @@ async function submitBulkMove() {
   }
 }
 
+watch(sanitizationResult, (val) => {
+  if (detailAsset.value?.location === 'WIPE_STATION') {
+    requestToLocation.value = val === 'PASS' ? 'CLEAN_CAGE' : val === 'FAIL' ? 'DESTRUCTION' : ''
+  }
+})
+
+watch([internalNotes, publicNotes], () => {
+  if (!detailAssetId.value) return
+  scheduleNotesSave()
+})
+
 function openDetail(row: Record<string, unknown>) {
   const id = row.id as string
   if (!id) return
@@ -324,6 +459,18 @@ function openDetail(row: Record<string, unknown>) {
   requestToLocation.value = ''
   requestError.value = ''
   requestSuccess.value = ''
+  sanitizationResult.value = ''
+  sanitizationMethod.value = ''
+  sanitizationToolUsed.value = ''
+  releaseDestination.value = ''
+  destroyWithoutWipe.value = false
+  internalNotes.value = ''
+  publicNotes.value = ''
+  notesShowSavedFlash.value = false
+  if (notesDebounceTimer) {
+    clearTimeout(notesDebounceTimer)
+    notesDebounceTimer = null
+  }
   loadDetail()
 }
 
@@ -337,6 +484,8 @@ async function loadDetail() {
       getAuditEvents({ asset_id: id }),
     ])
     detailAsset.value = asset
+    internalNotes.value = asset.internal_notes ?? ''
+    publicNotes.value = asset.public_notes ?? ''
     custodyRequests.value = requests
     assetAuditEvents.value = auditEvents
   } catch {
@@ -347,11 +496,44 @@ async function loadDetail() {
   }
 }
 
+function scheduleNotesSave() {
+  if (notesDebounceTimer) clearTimeout(notesDebounceTimer)
+  notesDebounceTimer = setTimeout(async () => {
+    notesDebounceTimer = null
+    const id = detailAssetId.value
+    if (!id || !detailAsset.value) return
+    try {
+      const updated = await updateAsset(id, {
+        internal_notes: internalNotes.value,
+        public_notes: publicNotes.value,
+      })
+      detailAsset.value = updated
+      notesShowSavedFlash.value = true
+      setTimeout(() => { notesShowSavedFlash.value = false }, 1500)
+    } catch {
+      // silent fail or could add non-text feedback later
+    }
+  }, NOTES_DEBOUNCE_MS)
+}
+
 function closeDetail() {
   detailAssetId.value = null
   detailAsset.value = null
   custodyRequests.value = []
   assetAuditEvents.value = []
+  requestToLocation.value = ''
+  sanitizationResult.value = ''
+  sanitizationMethod.value = ''
+  sanitizationToolUsed.value = ''
+  releaseDestination.value = ''
+  destroyWithoutWipe.value = false
+  internalNotes.value = ''
+  publicNotes.value = ''
+  notesShowSavedFlash.value = false
+  if (notesDebounceTimer) {
+    clearTimeout(notesDebounceTimer)
+    notesDebounceTimer = null
+  }
 }
 
 async function submitRequest() {
@@ -360,11 +542,23 @@ async function submitRequest() {
   requestSuccess.value = ''
   requestSubmitting.value = true
   try {
-    await createCustodyRequest({
+    const payload: Parameters<typeof createCustodyRequest>[0] = {
       asset_id: detailAsset.value.id,
       to_location: requestToLocation.value,
       intended_action: 'move',
-    })
+    }
+    if (detailAsset.value.location === 'WIPE_STATION' && sanitizationResult.value) {
+      payload.sanitization_result = sanitizationResult.value
+      if (sanitizationMethod.value) payload.sanitization_method = sanitizationMethod.value
+      if (sanitizationToolUsed.value) payload.sanitization_tool_used = sanitizationToolUsed.value
+    }
+    if (requestToLocation.value === 'SHIPPED' && releaseDestination.value) {
+      payload.release_destination = releaseDestination.value
+    }
+    if ((detailAsset.value.location === 'DIRTY_CAGE' || detailAsset.value.location === 'INTAKE') && requestToLocation.value === 'DESTRUCTION' && destroyWithoutWipe.value) {
+      payload.destroy_without_wipe = true
+    }
+    await createCustodyRequest(payload)
     requestSuccess.value = `Move to ${ASSET_LOCATIONS.find((l) => l.value === requestToLocation.value)?.label ?? requestToLocation.value} requested. Complete the move by scanning the asset at the destination.`
     await loadDetail()
   } catch (e) {
@@ -396,15 +590,22 @@ async function onSubmit() {
       customer_id: form.customer_id || null,
     })
     lastCreatedId.value = asset.internal_asset_id
-    form.manufacturer_model = ''
-    form.serial_number = ''
-    form.customer_id = null
+    closeAddAssetModal()
     await load()
   } catch (e) {
     addError.value = e instanceof Error ? e.message : 'Failed to add asset.'
   } finally {
     submitting.value = false
   }
+}
+
+function closeAddAssetModal() {
+  showAddAssetModal.value = false
+  form.manufacturer_model = ''
+  form.serial_number = ''
+  form.customer_id = null
+  addError.value = ''
+  lastCreatedId.value = ''
 }
 
 onMounted(() => {

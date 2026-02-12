@@ -39,7 +39,13 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: $space-4;
+  gap: $space-1;
+}
+
+.site-header .nav-sep {
+  color: var(--color-border);
+  user-select: none;
+  font-size: $font-size-sm;
 }
 
 .site-header .nav a {
@@ -49,11 +55,14 @@
   border-radius: $radius-md;
   transition: background 0.15s, color 0.15s;
   text-decoration: none;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid transparent;
   
   &.active {
     color: var(--color-primary);
     font-weight: 500;
-    background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+    background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.12);
+    border-color: rgba(var(--color-primary-rgb, 37, 99, 235), 0.25);
   }
   
   &:not(.disabled):hover {
@@ -68,15 +77,98 @@
   }
 }
 
-.site-header .logout {
-  color: var(--color-error) !important;
-  margin-left: $space-2;
+// Dropdown menus (Operations, Reports & Audit, Docs)
+.site-header .menu-dropdown {
+  position: relative;
 }
 
-// Theme toggle button
-.theme-toggle {
-  background: transparent;
+.site-header .menu-dropdown summary {
+  list-style: none;
+  cursor: pointer;
+  padding: $space-2 $space-3;
+  border-radius: $radius-md;
+  user-select: none;
+  font-size: $font-size-sm;
+  color: var(--color-text);
+  border: 1px solid transparent;
+  transition: background 0.15s, color 0.15s;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.site-header .menu-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+
+.site-header .menu-dropdown summary:hover {
+  background: var(--color-border);
+}
+
+.site-header .menu-dropdown[open] summary,
+.site-header .menu-dropdown.active summary {
+  background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+  color: var(--color-primary);
+}
+
+.site-header .menu-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.25rem);
+  min-width: 10rem;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1));
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+}
+
+.site-header .menu-list a {
+  padding: $space-2 $space-3;
+  border-radius: $radius-md;
+  text-decoration: none;
+  color: var(--color-text);
+  font-size: $font-size-sm;
+}
+
+.site-header .menu-list a:hover:not(.disabled) {
+  background: var(--color-border);
+  text-decoration: none;
+}
+
+.site-header .menu-list a.active {
+  color: var(--color-primary);
+  background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+}
+
+.site-header .menu-list a.disabled {
+  color: #999;
+  cursor: not-allowed;
+}
+
+// Profile (cog) icon: same button-style as theme toggle, no label
+.site-header .profile-cog {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: $space-2;
+  border-radius: $radius-md;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+// Theme toggle and logout: consistent button-style in nav
+.site-header .theme-toggle {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid transparent;
   color: var(--color-text);
   padding: $space-2;
   border-radius: $radius-md;
@@ -84,9 +176,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  transition: all 0.2s ease;
+  width: 2.25rem;
+  height: 2.25rem;
+  transition: background 0.15s, border-color 0.15s;
   
   &:hover {
     background: var(--color-border);
@@ -95,5 +187,23 @@
   svg {
     width: 1rem;
     height: 1rem;
+  }
+}
+
+.site-header .logout {
+  color: var(--color-error);
+  font-size: $font-size-sm;
+  padding: $space-2 $space-3;
+  border-radius: $radius-md;
+  border: 1px solid transparent;
+  background: rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+  margin-left: 0;
+  
+  &:hover {
+    background: rgba(var(--color-error-rgb, 220, 38, 38), 0.08);
+    text-decoration: none;
   }
 }

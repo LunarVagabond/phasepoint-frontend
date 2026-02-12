@@ -16,14 +16,21 @@
       <p v-if="!openRequestsLoading && openRequests.length === 0" class="modal-muted">No open custody requests.</p>
     </section>
     <section class="dashboard-section">
-      <h2 class="section-title">Employees</h2>
+      <div class="section-head">
+        <h2 class="section-title">Employees</h2>
+        <button type="button" class="btn-add-in-header" @click="showAddEmployeeModal = true">
+          <span class="add-icon">+</span> Add employee
+        </button>
+      </div>
       <DataTable
         :columns="employeeColumns"
         :data="tableData"
         :loading="loading"
         row-key="id"
+        :row-click="openEmployeeDetail"
       >
         <template #row-actions="{ row }">
+          <div @click.stop>
           <button type="button" class="btn-sm btn-edit" @click="openEdit(row)" aria-label="Edit">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -37,21 +44,7 @@
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             </svg>
           </button>
-        </template>
-        <template #add-row="{ colspan }">
-          <tr class="add-row">
-            <td :colspan="colspan">
-              <div class="add-user-form">
-                <span class="add-label"><span class="add-icon">+</span> Add employee</span>
-                <input v-model="newUser.username" placeholder="Username" />
-                <input v-model="newUser.password" type="password" placeholder="Password" />
-                <input v-model="newUser.email" type="email" placeholder="Email" />
-                <input v-model="newUser.employee_id" placeholder="Employee ID" />
-                <button type="button" class="btn-add" :disabled="adding" @click="addUser">Add</button>
-                <span v-if="addError" class="error-inline">{{ addError }}</span>
-              </div>
-            </td>
-          </tr>
+          </div>
         </template>
       </DataTable>
     </section>
@@ -100,7 +93,12 @@
     </section>
 
     <section class="dashboard-section">
-      <h2 class="section-title">Customers</h2>
+      <div class="section-head">
+        <h2 class="section-title">Customers</h2>
+        <button type="button" class="btn-add-in-header" @click="showAddCustomerModal = true">
+          <span class="add-icon">+</span> Add customer
+        </button>
+      </div>
       <p class="section-desc">Click a row to view details and edit internal notes.</p>
       <DataTable
         :columns="customerColumns"
@@ -108,50 +106,53 @@
         :loading="customersLoading"
         row-key="id"
         :row-click="openCustomerModal"
-      >
-        <template #add-row="{ colspan }">
-          <tr class="add-row">
-            <td :colspan="colspan">
-              <div class="add-user-form">
-                <span class="add-label"><span class="add-icon">+</span> Add customer</span>
-                <input v-model="newCustomer.name" placeholder="Name" />
-                <button type="button" class="btn-add" :disabled="addingCustomer" @click="addCustomer">Add</button>
-                <span v-if="customerError" class="error-inline">{{ customerError }}</span>
-              </div>
-            </td>
-          </tr>
-        </template>
-      </DataTable>
+      />
     </section>
 
     <div v-if="selectedIntakeRequest" class="modal-backdrop" @click.self="closeIntakeModal">
       <div class="modal modal-wide intake-detail-modal" @click.stop>
         <h3>Intake request</h3>
         <template v-if="!showRejectForm">
-          <dl class="intake-detail-dl">
-            <dt>Created</dt>
-            <dd>{{ formatDate(selectedIntakeRequest.created_at) }}</dd>
-            <dt>Company</dt>
-            <dd>{{ selectedIntakeRequest.customer_name || selectedIntakeRequest.company_name_raw || '—' }}</dd>
-            <dt>Contact</dt>
-            <dd>{{ [selectedIntakeRequest.contact_name, selectedIntakeRequest.contact_email, selectedIntakeRequest.contact_phone].filter(Boolean).join(' · ') || '—' }}</dd>
-            <dt>Asset types</dt>
-            <dd>{{ selectedIntakeRequest.asset_quantities_display || selectedIntakeRequest.asset_types_display?.join(', ') || '—' }}</dd>
-            <dt>Customer notes</dt>
-            <dd class="detail-notes">{{ selectedIntakeRequest.notes || '—' }}</dd>
-            <dt>Delivery</dt>
-            <dd>{{ logisticsLabel(selectedIntakeRequest) }}</dd>
-            <dt>Status</dt>
-            <dd><span class="badge">{{ selectedIntakeRequest.status }}</span></dd>
-            <template v-if="selectedIntakeRequest.rejected_reason">
-              <dt>Rejection reason</dt>
-              <dd class="detail-notes">{{ selectedIntakeRequest.rejected_reason }}</dd>
-            </template>
-            <template v-if="selectedIntakeRequest.accepted_at">
-              <dt>Accepted</dt>
-              <dd>{{ formatDate(selectedIntakeRequest.accepted_at) }}</dd>
-            </template>
-          </dl>
+          <table class="detail-table">
+            <tbody>
+              <tr>
+                <th scope="row">Created</th>
+                <td>{{ formatDate(selectedIntakeRequest.created_at) }}</td>
+              </tr>
+              <tr>
+                <th scope="row">Company</th>
+                <td>{{ selectedIntakeRequest.customer_name || selectedIntakeRequest.company_name_raw || '—' }}</td>
+              </tr>
+              <tr>
+                <th scope="row">Contact</th>
+                <td>{{ [selectedIntakeRequest.contact_name, selectedIntakeRequest.contact_email, selectedIntakeRequest.contact_phone].filter(Boolean).join(' · ') || '—' }}</td>
+              </tr>
+              <tr>
+                <th scope="row">Asset types</th>
+                <td>{{ selectedIntakeRequest.asset_quantities_display || selectedIntakeRequest.asset_types_display?.join(', ') || '—' }}</td>
+              </tr>
+              <tr>
+                <th scope="row">Customer notes</th>
+                <td class="detail-notes">{{ selectedIntakeRequest.notes || '—' }}</td>
+              </tr>
+              <tr>
+                <th scope="row">Delivery</th>
+                <td>{{ logisticsLabel(selectedIntakeRequest) }}</td>
+              </tr>
+              <tr>
+                <th scope="row">Status</th>
+                <td><span class="badge">{{ selectedIntakeRequest.status }}</span></td>
+              </tr>
+              <tr v-if="selectedIntakeRequest.rejected_reason">
+                <th scope="row">Rejection reason</th>
+                <td class="detail-notes">{{ selectedIntakeRequest.rejected_reason }}</td>
+              </tr>
+              <tr v-if="selectedIntakeRequest.accepted_at">
+                <th scope="row">Accepted</th>
+                <td>{{ formatDate(selectedIntakeRequest.accepted_at) }}</td>
+              </tr>
+            </tbody>
+          </table>
           <div
             v-if="selectedIntakeRequest.status === 'ACCEPTED' && (selectedIntakeRequest.delivery_type || 'PICKUP') === 'PICKUP'"
             class="pickup-schedule-card"
@@ -187,10 +188,11 @@
           </div>
 
           <div class="form-row">
-            <label for="intake-internal-notes">Internal notes</label>
+            <label class="field-label" for="intake-internal-notes">Internal notes</label>
             <textarea
               id="intake-internal-notes"
               v-model="editIntakeNotes"
+              class="text-input textarea-input"
               placeholder="Internal notes (staff only)…"
               rows="3"
             />
@@ -235,25 +237,37 @@
     <div v-if="selectedCustomer" class="modal-backdrop" @click.self="closeCustomerModal">
       <div class="modal modal-wide customer-detail-modal" @click.stop>
         <h3>Customer</h3>
-        <dl class="intake-detail-dl">
-          <dt>Company</dt>
-          <dd>{{ selectedCustomer.name }}</dd>
-          <dt>Email</dt>
-          <dd>{{ selectedCustomer.email || '—' }}</dd>
-          <dt>Phone</dt>
-          <dd>{{ selectedCustomer.phone || '—' }}</dd>
-          <dt>Address</dt>
-          <dd class="detail-notes">{{ formatCustomerAddress(selectedCustomer) }}</dd>
-        </dl>
-        <div class="form-row">
-          <label class="field-label" for="customer-notes">Internal notes</label>
-          <textarea
-            id="customer-notes"
-            v-model="editCustomerNotes"
-            class="textarea-input"
-            placeholder="Internal notes…"
-            rows="4"
-          />
+        <table class="detail-table">
+          <tbody>
+            <tr>
+              <th scope="row">Company</th>
+              <td>{{ selectedCustomer.name }}</td>
+            </tr>
+            <tr>
+              <th scope="row">Email</th>
+              <td>{{ selectedCustomer.email || '—' }}</td>
+            </tr>
+            <tr>
+              <th scope="row">Phone</th>
+              <td>{{ selectedCustomer.phone || '—' }}</td>
+            </tr>
+            <tr>
+              <th scope="row">Address</th>
+              <td class="detail-notes">{{ formatCustomerAddress(selectedCustomer) }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="modal-form">
+          <div class="form-row">
+            <label class="field-label" for="customer-notes">Internal notes</label>
+            <textarea
+              id="customer-notes"
+              v-model="editCustomerNotes"
+              class="text-input textarea-input"
+              placeholder="Internal notes…"
+              rows="4"
+            />
+          </div>
         </div>
         <p v-if="customerSaveError" class="modal-error">{{ customerSaveError }}</p>
         <div class="modal-actions">
@@ -289,17 +303,184 @@
       </div>
     </div>
 
+    <div v-if="showAddEmployeeModal" class="modal-backdrop" @click.self="closeAddEmployeeModal">
+      <div class="modal modal-wide" @click.stop>
+        <h3>Add employee</h3>
+        <div class="modal-form">
+          <div class="form-row">
+            <label class="field-label" for="new-user-username">Username</label>
+            <input id="new-user-username" v-model="newUser.username" type="text" class="text-input" placeholder="Username" />
+          </div>
+          <div class="form-row">
+            <label class="field-label" for="new-user-password">Password</label>
+            <input id="new-user-password" v-model="newUser.password" type="password" class="text-input" placeholder="Password" />
+          </div>
+          <div class="form-row">
+            <label class="field-label" for="new-user-email">Email</label>
+            <input id="new-user-email" v-model="newUser.email" type="email" class="text-input" placeholder="Email" />
+          </div>
+          <div class="form-row">
+            <label class="field-label" for="new-user-first-name">First name</label>
+            <input id="new-user-first-name" v-model="newUser.first_name" type="text" class="text-input" placeholder="First name" />
+          </div>
+          <div class="form-row">
+            <label class="field-label" for="new-user-last-name">Last name</label>
+            <input id="new-user-last-name" v-model="newUser.last_name" type="text" class="text-input" placeholder="Last name" />
+          </div>
+          <div class="form-row">
+            <label class="field-label" for="new-user-phone">Phone</label>
+            <input id="new-user-phone" v-model="newUser.phone" type="tel" class="text-input" placeholder="Phone" />
+          </div>
+          <p v-if="addError" class="modal-error">{{ addError }}</p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" @click="closeAddEmployeeModal">Cancel</button>
+          <button type="button" class="btn-primary" :disabled="adding || !newUser.username.trim() || !newUser.password" @click="addUser">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showAddCustomerModal" class="modal-backdrop" @click.self="closeAddCustomerModal">
+      <div class="modal modal-wide" @click.stop>
+        <h3>Add customer</h3>
+        <div class="modal-form">
+          <div class="form-row">
+            <label class="field-label" for="new-customer-name">Company name</label>
+            <input id="new-customer-name" v-model="newCustomer.name" class="text-input" placeholder="Company name" />
+          </div>
+          <div class="form-row">
+            <label class="field-label" for="new-customer-email">Email</label>
+            <input id="new-customer-email" v-model="newCustomer.email" type="email" class="text-input" placeholder="Email" />
+          </div>
+          <div class="form-row">
+            <label class="field-label" for="new-customer-phone">Phone</label>
+            <input id="new-customer-phone" v-model="newCustomer.phone" type="tel" class="text-input" placeholder="Phone" />
+          </div>
+          <div class="form-row">
+            <label class="field-label" for="new-customer-address1">Address</label>
+            <input
+              id="new-customer-address1"
+              v-model="newCustomer.address_line1"
+              type="text"
+              class="text-input"
+              placeholder="Start typing street address…"
+              autocomplete="off"
+            />
+            <ul v-if="customerAddressSuggestions.length" class="address-suggestions">
+              <li
+                v-for="item in customerAddressSuggestions"
+                :key="item.display_name"
+                @mousedown.prevent="applyCustomerAddressSuggestion(item)"
+              >
+                {{ item.display_name }}
+              </li>
+            </ul>
+            <p v-else-if="customerAddressSearching" class="modal-muted">Searching addresses…</p>
+          </div>
+          <div class="form-row">
+            <label class="field-label" for="new-customer-address2">Address line 2</label>
+            <input id="new-customer-address2" v-model="newCustomer.address_line2" type="text" class="text-input" placeholder="Apartment, suite, etc." />
+          </div>
+          <div class="address-grid">
+            <div class="form-row">
+              <label class="field-label" for="new-customer-city">City</label>
+              <input id="new-customer-city" v-model="newCustomer.city" type="text" class="text-input" placeholder="City" />
+            </div>
+            <div class="form-row">
+              <label class="field-label" for="new-customer-province">State</label>
+              <select id="new-customer-province" v-model="newCustomer.province" class="text-input">
+                <option value="">Select state</option>
+                <option v-for="s in US_STATES" :key="s" :value="s">{{ s }}</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="field-label" for="new-customer-country">Country</label>
+              <input id="new-customer-country" v-model="newCustomer.country" type="text" class="text-input" placeholder="Country" />
+            </div>
+            <div class="form-row">
+              <label class="field-label" for="new-customer-postal">Postal code</label>
+              <input id="new-customer-postal" v-model="newCustomer.postal_code" type="text" class="text-input" placeholder="Postal code" />
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="field-label" for="new-customer-notes">Internal notes</label>
+            <textarea id="new-customer-notes" v-model="newCustomer.notes" class="text-input textarea-input" placeholder="Notes (optional)" rows="3" />
+          </div>
+          <p v-if="customerError" class="modal-error">{{ customerError }}</p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" @click="closeAddCustomerModal">Cancel</button>
+          <button type="button" class="btn-primary" :disabled="addingCustomer || !newCustomer.name.trim()" @click="addCustomer">Add customer</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="selectedEmployee" class="modal-backdrop" @click.self="closeEmployeeDetail">
+      <div class="modal modal-wide employee-detail-modal" @click.stop>
+        <h3>Employee: {{ selectedEmployee.username }}</h3>
+        <table class="detail-table">
+          <tbody>
+            <tr>
+              <th scope="row">Username</th>
+              <td>{{ selectedEmployee.username }}</td>
+            </tr>
+            <tr>
+              <th scope="row">Email</th>
+              <td>{{ selectedEmployee.email || '—' }}</td>
+            </tr>
+            <tr>
+              <th scope="row">First name</th>
+              <td>{{ selectedEmployee.first_name || '—' }}</td>
+            </tr>
+            <tr>
+              <th scope="row">Last name</th>
+              <td>{{ selectedEmployee.last_name || '—' }}</td>
+            </tr>
+            <tr>
+              <th scope="row">Phone</th>
+              <td>{{ (selectedEmployee as UserSummary & { phone?: string }).phone || '—' }}</td>
+            </tr>
+            <tr>
+              <th scope="row">Active</th>
+              <td><span class="badge">{{ selectedEmployee.is_active ? 'Yes' : 'No' }}</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Staff</th>
+              <td><span class="badge">{{ selectedEmployee.is_staff ? 'Yes' : 'No' }}</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Groups</th>
+              <td>{{ selectedEmployee.groups_display?.length ? selectedEmployee.groups_display.join(', ') : '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="modal-actions">
+          <router-link v-if="selectedEmployee.id === meId" to="/employee-portal/profile" class="btn-primary" @click="closeEmployeeDetail">Edit my profile</router-link>
+          <button type="button" class="btn-secondary" @click="openEdit(selectedEmployee)">Edit (admin)</button>
+          <button type="button" class="btn-secondary" @click="closeEmployeeDetail">Close</button>
+        </div>
+      </div>
+    </div>
+
     <div v-if="editingUser" class="modal-backdrop" @click.self="editingUser = null">
       <div class="modal modal-wide" @click.stop>
         <h3>Edit {{ editingUser.username }}</h3>
         <div class="modal-form">
           <div class="form-row">
-            <label>Email</label>
-            <input v-model="editEmail" type="email" placeholder="Email" />
+            <label class="field-label" for="edit-user-email">Email</label>
+            <input id="edit-user-email" v-model="editEmail" type="email" class="text-input" placeholder="Email" />
           </div>
           <div class="form-row">
-            <label>Employee ID</label>
-            <input v-model="editEmployeeId" placeholder="Employee ID" />
+            <label class="field-label" for="edit-user-first-name">First name</label>
+            <input id="edit-user-first-name" v-model="editFirstName" type="text" class="text-input" placeholder="First name" />
+          </div>
+          <div class="form-row">
+            <label class="field-label" for="edit-user-last-name">Last name</label>
+            <input id="edit-user-last-name" v-model="editLastName" type="text" class="text-input" placeholder="Last name" />
+          </div>
+          <div class="form-row">
+            <label class="field-label" for="edit-user-phone">Phone</label>
+            <input id="edit-user-phone" v-model="editPhone" type="tel" class="text-input" placeholder="Phone" />
           </div>
           <div class="form-row form-row-check">
             <label class="group-check">
@@ -326,8 +507,9 @@
 </template>
 
 <script setup lang="ts">
+// TODO: consider extracting AddEmployeeModal, AddCustomerModal, EditEmployeeModal into reusable components
 import { ref, reactive, computed, watch, onMounted } from 'vue'
-import { getUsersByType, getGroups, createUser, updateUser, deleteUser, getMe, getCustomers, createCustomer, updateCustomer, getCustodyRequests, cancelCustodyRequest, canSeeIntakeRequests, getIntakeRequests, updateIntakeRequest } from '../api'
+import { getUsersByType, getGroups, createUser, updateUser, deleteUser, getMe, getCustomers, createCustomer, updateCustomer, getCustodyRequests, cancelCustodyRequest, canSeeIntakeRequests, getIntakeRequests, updateIntakeRequest, searchUsAddresses } from '../api'
 import DataTable from '../components/DataTable.vue'
 import type { UserSummary, CustomerSummary, CustodyRequestSummary, IntakeRequestSummary, MeResponse } from '../api'
 import type { DataTableColumn } from '../components/DataTable.vue'
@@ -335,7 +517,7 @@ import type { DataTableColumn } from '../components/DataTable.vue'
 const employeeColumns: DataTableColumn[] = [
   { key: 'username', label: 'Username', type: 'strong' },
   { key: 'email', label: 'Email' },
-  { key: 'employee_id', label: 'Employee ID' },
+  { key: 'phone_display', label: 'Phone' },
   { key: 'active_display', label: 'Active', type: 'badge' },
   { key: 'staff_display', label: 'Staff', type: 'badge' },
   { key: 'groups_str', label: 'Groups' },
@@ -352,7 +534,6 @@ const customerUserColumns: DataTableColumn[] = [
   { key: 'username', label: 'Username', type: 'strong' },
   { key: 'email', label: 'Email' },
   { key: 'customer_name', label: 'Company' },
-  { key: 'active_display', label: 'Active', type: 'badge' },
 ]
 
 const openRequestsColumns: DataTableColumn[] = [
@@ -385,6 +566,7 @@ const loading = ref(true)
 const tableData = computed(() =>
   employeeUsers.value.map((u) => ({
     ...u,
+    phone_display: (u as UserSummary & { phone?: string }).phone || '—',
     active_display: u.is_active ? 'Yes' : 'No',
     staff_display: u.is_staff ? 'Yes' : 'No',
     groups_str: u.groups_display.length ? u.groups_display.join(', ') : '—',
@@ -406,7 +588,22 @@ const customersTableData = computed(() =>
     notes_short: truncateStr(c.notes || '', 40),
   }))
 )
-const newCustomer = reactive({ name: '' })
+const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC']
+const newCustomer = reactive({
+  name: '',
+  email: '',
+  phone: '',
+  address_line1: '',
+  address_line2: '',
+  city: '',
+  province: '',
+  country: 'United States',
+  postal_code: '',
+  notes: '',
+})
+const customerAddressSuggestions = ref<Array<{ display_name: string; address_line1: string; city: string; province: string; country: string; postal_code: string }>>([])
+const customerAddressSearching = ref(false)
+let customerAddressSearchTimer: ReturnType<typeof setTimeout> | null = null
 const addingCustomer = ref(false)
 const customerError = ref('')
 const selectedCustomer = ref<CustomerSummary | null>(null)
@@ -494,13 +691,18 @@ function formatDate(iso: string) {
   }
 }
 
-const newUser = reactive({ username: '', password: '', email: '', employee_id: '' })
+const showAddEmployeeModal = ref(false)
+const showAddCustomerModal = ref(false)
+const newUser = reactive({ username: '', password: '', email: '', first_name: '', last_name: '', phone: '' })
 const adding = ref(false)
 const addError = ref('')
 
+const selectedEmployee = ref<UserSummary | null>(null)
 const editingUser = ref<UserSummary | null>(null)
 const editEmail = ref('')
-const editEmployeeId = ref('')
+const editFirstName = ref('')
+const editLastName = ref('')
+const editPhone = ref('')
 const editIsStaff = ref(false)
 const editGroupIds = ref<number[]>([])
 const saving = ref(false)
@@ -539,6 +741,42 @@ function loadIntakeRequests() {
     .finally(() => {
       intakeLoading.value = false
     })
+}
+
+watch(
+  () => newCustomer.address_line1,
+  (q) => {
+    if (customerAddressSearchTimer) clearTimeout(customerAddressSearchTimer)
+    if (!q?.trim() || q.trim().length < 3) {
+      customerAddressSuggestions.value = []
+      return
+    }
+    customerAddressSearchTimer = setTimeout(async () => {
+      customerAddressSearching.value = true
+      try {
+        customerAddressSuggestions.value = await searchUsAddresses(q)
+      } catch {
+        customerAddressSuggestions.value = []
+      } finally {
+        customerAddressSearching.value = false
+      }
+    }, 250)
+  }
+)
+
+function applyCustomerAddressSuggestion(item: {
+  address_line1: string
+  city: string
+  province: string
+  country: string
+  postal_code: string
+}) {
+  newCustomer.address_line1 = item.address_line1 || newCustomer.address_line1
+  newCustomer.city = item.city || newCustomer.city
+  newCustomer.province = item.province || newCustomer.province
+  newCustomer.country = item.country || 'United States'
+  newCustomer.postal_code = item.postal_code || newCustomer.postal_code
+  customerAddressSuggestions.value = []
 }
 
 watch([intakeStatusFilter, intakeSearchQuery, intakeOrdering], () => {
@@ -690,12 +928,11 @@ async function addUser() {
       username: newUser.username.trim(),
       password: newUser.password,
       email: newUser.email.trim() || undefined,
-      employee_id: newUser.employee_id.trim() || undefined,
+      first_name: newUser.first_name.trim() || undefined,
+      last_name: newUser.last_name.trim() || undefined,
+      phone: newUser.phone.trim() || undefined,
     })
-    newUser.username = ''
-    newUser.password = ''
-    newUser.email = ''
-    newUser.employee_id = ''
+    closeAddEmployeeModal()
     await load()
   } catch (e) {
     addError.value = e instanceof Error ? e.message : 'Failed to add user.'
@@ -704,11 +941,36 @@ async function addUser() {
   }
 }
 
+function closeAddEmployeeModal() {
+  showAddEmployeeModal.value = false
+  newUser.username = ''
+  newUser.password = ''
+  newUser.email = ''
+  newUser.first_name = ''
+  newUser.last_name = ''
+  newUser.phone = ''
+  addError.value = ''
+}
+
+function openEmployeeDetail(row: Record<string, unknown>) {
+  const id = row.id as string
+  if (!id) return
+  const user = employeeUsers.value.find((u) => u.id === id) ?? null
+  selectedEmployee.value = user
+}
+
+function closeEmployeeDetail() {
+  selectedEmployee.value = null
+}
+
 function openEdit(row: UserSummary | Record<string, unknown>) {
-  const user = row as UserSummary
+  const user = row as UserSummary & { phone?: string }
   editingUser.value = user
+  selectedEmployee.value = null
   editEmail.value = user.email ?? ''
-  editEmployeeId.value = user.employee_id ?? ''
+  editFirstName.value = user.first_name ?? ''
+  editLastName.value = user.last_name ?? ''
+  editPhone.value = user.phone ?? ''
   editIsStaff.value = user.is_staff ?? false
   const groupIds = groups.value.filter((g) => user.groups_display.includes(g.name)).map((g) => g.id)
   editGroupIds.value = [...groupIds]
@@ -720,7 +982,9 @@ async function saveEdit() {
   try {
     await updateUser(editingUser.value.id, {
       email: editEmail.value.trim() || undefined,
-      employee_id: editEmployeeId.value.trim() || undefined,
+      first_name: editFirstName.value.trim() || undefined,
+      last_name: editLastName.value.trim() || undefined,
+      phone: editPhone.value.trim() || undefined,
       is_staff: editIsStaff.value,
       groups: editGroupIds.value,
     })
@@ -736,14 +1000,41 @@ async function addCustomer() {
   customerError.value = ''
   addingCustomer.value = true
   try {
-    await createCustomer({ name: newCustomer.name.trim() })
-    newCustomer.name = ''
+    await createCustomer({
+      name: newCustomer.name.trim(),
+      email: newCustomer.email.trim() || undefined,
+      phone: newCustomer.phone.trim() || undefined,
+      address_line1: newCustomer.address_line1.trim() || undefined,
+      address_line2: newCustomer.address_line2.trim() || undefined,
+      city: newCustomer.city.trim() || undefined,
+      province: newCustomer.province.trim() || undefined,
+      country: newCustomer.country.trim() || undefined,
+      postal_code: newCustomer.postal_code.trim() || undefined,
+      notes: newCustomer.notes.trim() || undefined,
+    })
+    closeAddCustomerModal()
     await loadCustomers()
   } catch (e) {
     customerError.value = e instanceof Error ? e.message : 'Failed to add customer.'
   } finally {
     addingCustomer.value = false
   }
+}
+
+function closeAddCustomerModal() {
+  showAddCustomerModal.value = false
+  newCustomer.name = ''
+  newCustomer.email = ''
+  newCustomer.phone = ''
+  newCustomer.address_line1 = ''
+  newCustomer.address_line2 = ''
+  newCustomer.city = ''
+  newCustomer.province = ''
+  newCustomer.country = 'United States'
+  newCustomer.postal_code = ''
+  newCustomer.notes = ''
+  customerAddressSuggestions.value = []
+  customerError.value = ''
 }
 
 function openCustomerModal(row: Record<string, unknown>) {
@@ -847,228 +1138,3 @@ watch(showIntakeRequests, (visible) => {
   if (visible && intakeRequests.value.length === 0 && !intakeLoading.value) loadIntakeRequests()
 })
 </script>
-
-<style scoped lang="scss">
-@use '../styles/variables' as *;
-
-.list-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $space-3;
-  margin-bottom: $space-4;
-}
-
-.filter-select,
-.filter-input {
-  padding: $space-2 $space-3;
-  border: 1px solid var(--color-border);
-  border-radius: $radius-md;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: $font-size-base;
-}
-
-.filter-input {
-  min-width: 200px;
-}
-
-.row-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $space-2;
-}
-
-.row-actions .btn-sm {
-  padding: $space-1 $space-2;
-  font-size: $font-size-sm;
-  border-radius: $radius-md;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  cursor: pointer;
-}
-.row-actions .btn-seen:hover { background: var(--color-border); }
-.row-actions .btn-accept { border-color: var(--color-success, green); color: var(--color-success, green); }
-.row-actions .btn-accept:hover { background: rgba(34, 197, 94, 0.1); }
-.row-actions .btn-reject { border-color: var(--color-error); color: var(--color-error); }
-.row-actions .btn-reject:hover { background: rgba(239, 68, 68, 0.1); }
-.row-actions .btn-complete:hover { background: var(--color-border); }
-.row-actions .btn-note { color: var(--color-text-muted); }
-.row-actions .btn-note:hover { background: var(--color-border); }
-
-.table-hint {
-  font-size: $font-size-sm;
-  color: var(--color-text-muted);
-  margin: $space-2 0 0;
-}
-
-.intake-detail-modal .intake-detail-dl {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: $space-2 $space-6;
-  margin: 0 0 $space-6;
-  font-size: $font-size-base;
-}
-.intake-detail-modal dt {
-  color: var(--color-text-muted);
-  font-weight: 500;
-}
-.intake-detail-modal dd {
-  margin: 0;
-  min-width: 0;
-}
-.intake-detail-modal .detail-notes {
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.intake-detail-modal .badge {
-  display: inline-block;
-  padding: $space-1 $space-2;
-  border-radius: $radius-md;
-  font-size: $font-size-sm;
-  background: var(--color-border);
-  color: var(--color-text);
-}
-.intake-modal-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $space-2;
-  align-items: center;
-}
-.intake-modal-actions .btn-sm {
-  padding: $space-1 $space-2;
-  font-size: $font-size-sm;
-  border-radius: $radius-md;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  cursor: pointer;
-}
-.intake-modal-actions .btn-seen:hover { background: var(--color-border); }
-.intake-modal-actions .btn-accept { border-color: var(--color-success, green); color: var(--color-success, green); }
-.intake-modal-actions .btn-accept:hover { background: rgba(34, 197, 94, 0.1); }
-.intake-modal-actions .btn-reject { border-color: var(--color-error); color: var(--color-error); }
-.intake-modal-actions .btn-reject:hover { background: rgba(239, 68, 68, 0.1); }
-.intake-modal-actions .btn-complete:hover { background: var(--color-border); }
-.intake-modal-actions .btn-note { color: var(--color-text-muted); }
-.intake-modal-actions .btn-note:hover { background: var(--color-border); }
-
-.modal-error {
-  color: var(--color-error);
-  font-size: $font-size-sm;
-  margin: $space-2 0 0;
-}
-
-.intake-detail-modal .form-row .btn-save-note {
-  margin-top: $space-2;
-}
-
-.pickup-schedule-card {
-  margin-top: $space-4;
-  padding: $space-4;
-  background: var(--color-background);
-  border: 1px solid var(--color-border);
-  border-radius: $radius-md;
-}
-.pickup-schedule-title {
-  margin: 0 0 $space-1;
-  font-size: $font-size-base;
-  font-weight: 600;
-  color: var(--color-text);
-}
-.pickup-schedule-hint {
-  margin: 0 0 $space-3;
-  font-size: $font-size-sm;
-  color: var(--color-text-muted);
-}
-.pickup-schedule-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: $space-3;
-}
-.pickup-field {
-  display: flex;
-  flex-direction: column;
-  gap: $space-1;
-  min-width: 140px;
-}
-.pickup-field label {
-  font-size: $font-size-sm;
-  font-weight: 500;
-  color: var(--color-text);
-}
-.pickup-input {
-  padding: $space-2 $space-3;
-  font-size: $font-size-base;
-  min-height: 40px;
-}
-.pickup-actions {
-  margin-left: $space-2;
-}
-
-.required { color: var(--color-error); }
-
-.reject-form .reject-title {
-  font-size: $font-size-base;
-  font-weight: 600;
-  margin: 0 0 $space-4;
-  color: var(--color-text);
-}
-.reject-form .field-label {
-  display: block;
-  font-size: $font-size-sm;
-  font-weight: 500;
-  color: var(--color-text);
-  margin-bottom: $space-1;
-}
-.reject-form .textarea-input {
-  width: 100%;
-  margin-bottom: $space-4;
-  padding: $space-3 $space-4;
-  border: 1px solid var(--color-border);
-  border-radius: $radius-md;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: $font-size-base;
-  font-family: inherit;
-  resize: vertical;
-  min-height: 100px;
-}
-.reject-form .textarea-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.confirm-modal .confirm-message {
-  margin: 0 0 $space-4;
-  color: var(--color-text);
-  line-height: 1.5;
-}
-
-.customer-detail-modal .form-row {
-  margin-top: $space-4;
-}
-.customer-detail-modal .form-row .field-label {
-  display: block;
-  font-size: $font-size-sm;
-  font-weight: 500;
-  color: var(--color-text);
-  margin-bottom: $space-1;
-}
-.customer-detail-modal .textarea-input {
-  width: 100%;
-  padding: $space-3 $space-4;
-  border: 1px solid var(--color-border);
-  border-radius: $radius-md;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: $font-size-base;
-  font-family: inherit;
-  line-height: 1.5;
-  resize: vertical;
-  min-height: 100px;
-}
-.customer-detail-modal .textarea-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-</style>

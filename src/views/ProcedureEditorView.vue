@@ -1,17 +1,17 @@
 <template>
-  <div class="policy-editor-view">
+  <div class="policy-editor-view procedure-editor-view">
     <div class="editor-wrapper">
       <div v-if="loading" class="loading">Loading…</div>
       <div v-else-if="error" class="error">{{ error }}</div>
       <div v-else class="editor-container">
         <div class="editor-header">
-          <h1>{{ isEdit ? `Edit Policy: ${policyName}` : 'Create Policy' }}</h1>
+          <h1>{{ isEdit ? `Edit Procedure: ${procedureName}` : 'Create Procedure' }}</h1>
         </div>
         <form @submit.prevent="handleSave" class="editor-form">
           <div class="form-grid">
             <div class="form-group">
               <label>Name *</label>
-              <input v-model="formData.name" required type="text" placeholder="Policy name" @change="syncFormToBody" />
+              <input v-model="formData.name" required type="text" placeholder="Procedure name" @change="syncFormToBody" />
             </div>
             <div class="form-group">
               <label>Slug *</label>
@@ -20,7 +20,7 @@
                 required
                 type="text"
                 :disabled="isEdit"
-                placeholder="policy-slug"
+                placeholder="procedure-slug"
                 pattern="[-a-z0-9]+"
               />
               <small v-if="isEdit">Slug cannot be changed after creation</small>
@@ -42,20 +42,12 @@
                   (from frontmatter) {{ formData.owner }}
                 </option>
                 <optgroup label="Groups">
-                  <option
-                    v-for="g in ownerChoices.groups"
-                    :key="g.value"
-                    :value="g.value"
-                  >
+                  <option v-for="g in ownerChoices.groups" :key="g.value" :value="g.value">
                     {{ g.label }}
                   </option>
                 </optgroup>
                 <optgroup label="Users">
-                  <option
-                    v-for="u in ownerChoices.users"
-                    :key="u.value"
-                    :value="u.value"
-                  >
+                  <option v-for="u in ownerChoices.users" :key="u.value" :value="u.value">
                     {{ u.label }}
                   </option>
                 </optgroup>
@@ -75,13 +67,13 @@
             </div>
           </div>
           <div class="form-group-full">
-            <label>Policy Content (Markdown) *</label>
+            <label>Procedure Content (Markdown) *</label>
             <PolicyEditor v-model="formData.body" />
           </div>
           <div class="form-actions">
             <button type="button" @click="handleCancel" class="btn-secondary">Cancel</button>
             <button type="submit" :disabled="saving" class="btn-primary">
-              {{ saving ? 'Saving…' : isEdit ? 'Update Policy' : 'Create Policy' }}
+              {{ saving ? 'Saving…' : isEdit ? 'Update Procedure' : 'Create Procedure' }}
             </button>
           </div>
         </form>
@@ -93,10 +85,19 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getPolicy, createPolicy, updatePolicy, getMe, canEditPolicies, getOwnerChoices, ensureCsrfCookie } from '../api'
+import {
+  getProcedure,
+  createProcedure,
+  updateProcedure,
+  getMe,
+  canEditProcedures,
+  getOwnerChoices,
+  ensureCsrfCookie,
+} from '../api'
 import PolicyEditor from '../components/PolicyEditor.vue'
 import { parseFrontmatter, buildBody, getReservedKeysInFrontmatter, RESERVED_FRONTMATTER_KEYS } from '../utils/frontmatter'
-import type { PolicyDetail, PolicyCreateData, OwnerChoicesResponse } from '../api'
+import type { ProcedureDetail, ProcedureCreateData } from '../api'
+import type { OwnerChoicesResponse } from '../api'
 
 const route = useRoute()
 const router = useRouter()
@@ -104,12 +105,12 @@ const router = useRouter()
 const loading = ref(true)
 const saving = ref(false)
 const error = ref('')
-const policy = ref<PolicyDetail | null>(null)
+const procedure = ref<ProcedureDetail | null>(null)
 const me = ref<Awaited<ReturnType<typeof getMe>> | null>(null)
 const ownerChoices = ref<OwnerChoicesResponse>({ groups: [], users: [] })
 
 const isEdit = computed(() => !!route.params.slug)
-const policyName = computed(() => policy.value?.name || '')
+const procedureName = computed(() => procedure.value?.name || '')
 
 const ownerValueInChoices = computed(() => {
   const v = formData.value.owner
@@ -120,7 +121,7 @@ const ownerValueInChoices = computed(() => {
   )
 })
 
-const formData = ref<PolicyCreateData>({
+const formData = ref<ProcedureCreateData>({
   name: '',
   slug: '',
   effective_date: new Date().toISOString().split('T')[0],
@@ -130,11 +131,11 @@ const formData = ref<PolicyCreateData>({
 
 onMounted(async () => {
   await ensureCsrfCookie()
-  // Check permissions
   try {
     me.value = await getMe()
-    if (!canEditPolicies(me.value)) {
-      error.value = 'You do not have permission to edit policies. Membership in the "operations" group is required.'
+    if (!canEditProcedures(me.value)) {
+      error.value =
+        'You do not have permission to edit procedures. Membership in the "operations" group is required.'
       loading.value = false
       return
     }
@@ -144,47 +145,52 @@ onMounted(async () => {
     return
   }
 
-  // Load owner dropdown (groups + users)
   try {
     ownerChoices.value = await getOwnerChoices()
   } catch {
     // non-fatal
   }
 
-  // Load policy if editing
   if (isEdit.value) {
     try {
       const slug = route.params.slug as string
-      policy.value = await getPolicy(slug)
-      const existingOwner = policy.value.owner || ''
-      // Normalize legacy owner: if it's plain "operations" or a group name, use group:name
-      const groupMatch = ownerChoices.value.groups.find(g => g.label === existingOwner || g.value === existingOwner)
-      const userMatch = ownerChoices.value.users.find(u => u.value === existingOwner || u.label === existingOwner)
+      procedure.value = await getProcedure(slug)
+      const existingOwner = procedure.value.owner || ''
+      const groupMatch = ownerChoices.value.groups.find(
+        (g) => g.label === existingOwner || g.value === existingOwner
+      )
+      const userMatch = ownerChoices.value.users.find(
+        (u) => u.value === existingOwner || u.label === existingOwner
+      )
       let owner = existingOwner
       if (groupMatch) owner = groupMatch.value
       else if (userMatch) owner = userMatch.value
-      else if (existingOwner && !existingOwner.startsWith('group:') && !existingOwner.startsWith('user:')) {
-        const byGroup = ownerChoices.value.groups.find(g => g.value === `group:${existingOwner}`)
+      else if (
+        existingOwner &&
+        !existingOwner.startsWith('group:') &&
+        !existingOwner.startsWith('user:')
+      ) {
+        const byGroup = ownerChoices.value.groups.find((g) => g.value === `group:${existingOwner}`)
         if (byGroup) owner = byGroup.value
         else {
-          const byUser = ownerChoices.value.users.find(u => u.value === `user:${existingOwner}`)
+          const byUser = ownerChoices.value.users.find((u) => u.value === `user:${existingOwner}`)
           if (byUser) owner = byUser.value
         }
       }
       const resolvedOwner = owner || (me.value ? `user:${me.value.username}` : '')
-      const { frontmatter } = parseFrontmatter(policy.value.body)
+      const { frontmatter } = parseFrontmatter(procedure.value.body)
       formData.value = {
-        name: frontmatter.name ?? policy.value.name,
-        slug: policy.value.slug,
-        version: policy.value.version,
-        effective_date: frontmatter.effective_date ?? policy.value.effective_date,
+        name: frontmatter.name ?? procedure.value.name,
+        slug: procedure.value.slug,
+        version: procedure.value.version,
+        effective_date: frontmatter.effective_date ?? procedure.value.effective_date,
         owner: frontmatter.owner ?? resolvedOwner,
-        document_control_id: policy.value.document_control_id || '',
-        body: policy.value.body,
-        status: frontmatter.status ?? policy.value.status,
+        document_control_id: procedure.value.document_control_id || '',
+        body: procedure.value.body,
+        status: frontmatter.status ?? procedure.value.status,
       }
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to load policy'
+      error.value = e instanceof Error ? e.message : 'Failed to load procedure'
     }
   } else {
     syncFormToBody()
@@ -192,7 +198,6 @@ onMounted(async () => {
   loading.value = false
 })
 
-// When user edits markdown (body) and changes frontmatter, sync to form so dropdown/fields reflect it. Owner is source of truth in frontmatter.
 watch(
   () => formData.value.body,
   (body) => {
@@ -205,7 +210,6 @@ watch(
   { flush: 'sync' }
 )
 
-/** Update body's frontmatter from current form (name, owner, effective_date, status). */
 function syncFormToBody() {
   const { frontmatter, content } = parseFrontmatter(formData.value.body)
   const merged: Record<string, string> = { ...frontmatter }
@@ -249,31 +253,24 @@ async function handleSave() {
     RESERVED_FRONTMATTER_KEYS.forEach((k) => delete merged[k])
     const bodyToSave = buildBody(merged, content)
 
-    const dataToSave: any = {
+    const dataToSave: Parameters<typeof updateProcedure>[1] = {
       name,
       slug: formData.value.slug.trim(),
       effective_date: formData.value.effective_date,
       body: bodyToSave,
       status: formData.value.status,
+      owner: formData.value.owner ?? '',
     }
-    dataToSave.owner = formData.value.owner ?? ''
-    // Backend handles versioning logic:
-    // - New slug = version 1.0
-    // - Same slug = increment version
-    // - Editing ACTIVE policy = create new version
-    // - Editing DRAFT policy = update in place (keeps version/doc_id)
 
-    if (isEdit.value && policy.value) {
-      // Update existing policy (will create new version if ACTIVE)
-      await updatePolicy(policy.value.id, dataToSave)
-      router.push({ name: 'PolicyDetail', params: { slug: formData.value.slug } })
+    if (isEdit.value && procedure.value) {
+      await updateProcedure(procedure.value.id, dataToSave)
+      router.push({ name: 'ProcedureDetail', params: { slug: formData.value.slug } })
     } else {
-      // Create new policy
-      const newPolicy = await createPolicy(dataToSave)
-      router.push({ name: 'PolicyDetail', params: { slug: newPolicy.slug } })
+      const newProcedure = await createProcedure(dataToSave)
+      router.push({ name: 'ProcedureDetail', params: { slug: newProcedure.slug } })
     }
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Failed to save policy'
+    const msg = e instanceof Error ? e.message : 'Failed to save procedure'
     try {
       const parsed = JSON.parse(msg) as Record<string, string[] | string>
       if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
@@ -294,10 +291,10 @@ async function handleSave() {
 }
 
 function handleCancel() {
-  if (isEdit.value && policy.value) {
-    router.push({ name: 'PolicyDetail', params: { slug: policy.value.slug } })
+  if (isEdit.value && procedure.value) {
+    router.push({ name: 'ProcedureDetail', params: { slug: procedure.value.slug } })
   } else {
-    router.push({ name: 'Policies' })
+    router.push({ name: 'Procedures' })
   }
 }
 </script>

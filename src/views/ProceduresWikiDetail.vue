@@ -1,34 +1,37 @@
 <template>
   <div class="wiki-detail">
     <template v-if="loading">Loading…</template>
-    <template v-else-if="policy">
+    <template v-else-if="procedure">
       <div class="policy-header">
         <div class="meta-row">
-          <p class="meta">Version {{ policy.version }} · Effective {{ policy.effective_date }}{{ (ownerDisplay ?? '') ? ` · ${ownerDisplay}` : '' }}</p>
+          <p class="meta">
+            Version {{ procedure.version }} · Effective {{ procedure.effective_date
+            }}{{ ownerDisplay ? ` · ${ownerDisplay}` : '' }}
+          </p>
           <router-link
             v-if="versions.length > 1"
-            :to="{ name: 'PolicyDetail', params: { slug: policy.slug }, query: { v: undefined } }"
+            :to="{ name: 'ProcedureDetail', params: { slug: procedure.slug }, query: { v: undefined } }"
             class="version-link-inline"
           >
             View other versions
           </router-link>
         </div>
       </div>
-      <MarkdownContent :content="policy.body" :strip-top-heading="true" />
-      <PolicyPrintFooter v-if="!needsPolicyAccept" :policy-slug="policy.slug" @deleted="handlePolicyDeleted" />
+      <MarkdownContent :content="procedure.body" :strip-top-heading="true" />
+      <ProcedurePrintFooter v-if="canEdit" :procedure-slug="procedure.slug" @deleted="handleProcedureDeleted" />
     </template>
-    <template v-else>Policy not found.</template>
+    <template v-else>Procedure not found.</template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, onMounted, inject, onBeforeUnmount, computed, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getPolicy, getPolicyVersions, getMe, canEditPolicies } from '../api'
+import { getProcedure, getProcedureVersions, getMe, canEditProcedures } from '../api'
 import MarkdownContent from '../components/MarkdownContent.vue'
-import PolicyPrintFooter from '../components/PolicyPrintFooter.vue'
+import ProcedurePrintFooter from '../components/ProcedurePrintFooter.vue'
 import { slugify } from '../utils/slugify'
-import type { PolicyDetail, PolicyVersion } from '../api'
+import type { ProcedureDetail, ProcedureVersion } from '../api'
 import type { TocItem } from '../components/DocSidebar.vue'
 
 const router = useRouter()
@@ -59,16 +62,15 @@ function extractToc(markdown: string): TocItem[] {
 const setToc = inject<(items: TocItem[]) => void>('setToc')
 const clearToc = inject<() => void>('clearToc')
 const pageTitleRef = inject<Ref<string>>('pageTitle')
-const setVersions = inject<(versions: PolicyVersion[]) => void>('setVersions')
+const setVersions = inject<(versions: ProcedureVersion[]) => void>('setVersions')
 
 const route = useRoute()
-const policy = ref<PolicyDetail | null>(null)
+const procedure = ref<ProcedureDetail | null>(null)
 const loading = ref(true)
-const versions = ref<PolicyVersion[]>([])
+const versions = ref<ProcedureVersion[]>([])
 const me = ref<Awaited<ReturnType<typeof getMe>> | null>(null)
-const needsPolicyAccept = inject<Ref<boolean>>('needsPolicyAccept', ref(false))
 
-const canEdit = computed(() => me.value ? canEditPolicies(me.value) : false)
+const canEdit = computed(() => (me.value ? canEditProcedures(me.value) : false))
 
 function formatOwner(owner: string): string {
   if (!owner) return ''
@@ -77,7 +79,7 @@ function formatOwner(owner: string): string {
   return owner
 }
 
-const ownerDisplay = computed(() => (policy.value?.owner ? formatOwner(policy.value.owner) : ''))
+const ownerDisplay = computed(() => (procedure.value?.owner ? formatOwner(procedure.value.owner) : ''))
 
 async function load() {
   const slug = route.params.slug as string
@@ -86,26 +88,24 @@ async function load() {
   loading.value = true
   try {
     const versionParam = route.query.v as string | undefined
-    policy.value = await getPolicy(slug, versionParam)
-    if (pageTitleRef) pageTitleRef.value = policy.value?.name ?? ''
-    if (policy.value?.body && setToc) {
-      setToc(extractToc(policy.value.body))
+    procedure.value = await getProcedure(slug, versionParam)
+    if (pageTitleRef) pageTitleRef.value = procedure.value?.name ?? ''
+    if (procedure.value?.body && setToc) {
+      setToc(extractToc(procedure.value.body))
     }
-    // Load versions for this policy
     try {
-      versions.value = await getPolicyVersions(slug)
+      versions.value = await getProcedureVersions(slug)
       if (setVersions) setVersions(versions.value)
     } catch {
       versions.value = []
     }
-    // Load user info for permission check
     try {
       me.value = await getMe()
     } catch {
       me.value = null
     }
   } catch {
-    policy.value = null
+    procedure.value = null
     if (pageTitleRef) pageTitleRef.value = ''
     setToc?.([])
     versions.value = []
@@ -115,10 +115,12 @@ async function load() {
 }
 
 onMounted(load)
-watch(() => [route.params.slug, route.query.v], load)
-function handlePolicyDeleted() {
-  // Redirect to All Policies after deletion
-  router.push({ name: 'AllPolicies' })
+watch(
+  () => [route.params.slug, route.query.v],
+  load
+)
+function handleProcedureDeleted() {
+  router.push({ name: 'AllProcedures' })
 }
 
 onBeforeUnmount(() => {
@@ -130,7 +132,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .wiki-detail {
-  padding-bottom: 80px; /* Space for sticky footer */
+  padding-bottom: 80px;
 }
 
 .policy-header {
@@ -162,4 +164,3 @@ onBeforeUnmount(() => {
   color: inherit;
 }
 </style>
-

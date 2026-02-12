@@ -9,11 +9,14 @@
 @use 'components/policy-sidebar';
 @use 'components/markdown';
 @use 'components/wiki-footer';
+@use 'components/wiki-accept-footer';
 @use 'components/policy-print-footer';
+@use 'components/policy-editor';
 
 // Import view styles
 @use 'views/app-layout';
 @use 'views/dashboard';
+@use 'views/employee-profile';
 @use 'views/reports';
 @use 'views/intake';
 @use 'views/assets';
