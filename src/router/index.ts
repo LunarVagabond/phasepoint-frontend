@@ -31,6 +31,7 @@ const routes = [
           { path: '', name: 'CustomerPortalPreviewDashboard', component: () => import('../views/CustomerDashboardView.vue'), meta: { title: 'Customer Dashboard', customerPortalReadonly: true } },
           { path: 'terms', name: 'CustomerPortalPreviewTerms', component: () => import('../views/CustomerTermsView.vue'), meta: { title: 'Terms & Conditions', customerPortalReadonly: true } },
           { path: 'requests/new', name: 'CustomerPortalPreviewRequest', component: () => import('../views/RequestQuoteView.vue'), meta: { title: 'Create Request', customerPortalReadonly: true } },
+          { path: 'requests/:id', name: 'CustomerPortalPreviewRequestDetail', component: () => import('../views/CustomerRequestDetailView.vue'), meta: { title: 'Request detail', customerPortalReadonly: true } },
           { path: 'users', name: 'CustomerPortalPreviewUsers', component: () => import('../views/CustomerPortalUsersView.vue'), meta: { title: 'Team Users', customerPortalReadonly: true } },
           { path: 'profile', name: 'CustomerPortalPreviewProfile', component: () => import('../views/CustomerProfileView.vue'), meta: { title: 'Profile', customerPortalReadonly: true } },
         ],
@@ -61,6 +62,7 @@ const routes = [
     children: [
       { path: '', name: 'CustomerDashboard', component: () => import('../views/CustomerDashboardView.vue'), meta: { title: 'Customer Dashboard' } },
       { path: 'requests/new', name: 'CustomerRequest', component: () => import('../views/RequestQuoteView.vue'), meta: { title: 'Create Request', customerOnly: true } },
+      { path: 'requests/:id', name: 'CustomerRequestDetail', component: () => import('../views/CustomerRequestDetailView.vue'), meta: { title: 'Request detail', customerOnly: true } },
       { path: 'users', name: 'CustomerPortalUsers', component: () => import('../views/CustomerPortalUsersView.vue'), meta: { title: 'Team Users', customerOnly: true } },
       { path: 'profile', name: 'CustomerProfile', component: () => import('../views/CustomerProfileView.vue'), meta: { title: 'Profile', customerOnly: true } },
       { path: 'terms', name: 'CustomerTerms', component: () => import('../views/CustomerTermsView.vue'), meta: { title: 'Terms & Conditions', customerOnly: true } },

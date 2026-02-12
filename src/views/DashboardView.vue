@@ -139,6 +139,8 @@
             <dd>{{ selectedIntakeRequest.asset_quantities_display || selectedIntakeRequest.asset_types_display?.join(', ') || '—' }}</dd>
             <dt>Customer notes</dt>
             <dd class="detail-notes">{{ selectedIntakeRequest.notes || '—' }}</dd>
+            <dt>Delivery</dt>
+            <dd>{{ logisticsLabel(selectedIntakeRequest) }}</dd>
             <dt>Status</dt>
             <dd><span class="badge">{{ selectedIntakeRequest.status }}</span></dd>
             <template v-if="selectedIntakeRequest.rejected_reason">
@@ -150,6 +152,40 @@
               <dd>{{ formatDate(selectedIntakeRequest.accepted_at) }}</dd>
             </template>
           </dl>
+          <div
+            v-if="selectedIntakeRequest.status === 'ACCEPTED' && (selectedIntakeRequest.delivery_type || 'PICKUP') === 'PICKUP'"
+            class="pickup-schedule-card"
+          >
+            <h4 class="pickup-schedule-title">Schedule pickup</h4>
+            <p class="pickup-schedule-hint">Set when the team will pick up this request. Date and time are in your local timezone.</p>
+            <div class="pickup-schedule-row">
+              <div class="pickup-field">
+                <label for="pickup-date">Date</label>
+                <input
+                  id="pickup-date"
+                  v-model="pickupDate"
+                  type="date"
+                  class="text-input pickup-input"
+                  min="2020-01-01"
+                />
+              </div>
+              <div class="pickup-field">
+                <label for="pickup-time">Time</label>
+                <input
+                  id="pickup-time"
+                  v-model="pickupTime"
+                  type="time"
+                  class="text-input pickup-input"
+                />
+              </div>
+              <div class="pickup-actions">
+                <button type="button" class="btn-primary" :disabled="savingPickup || !pickupDate || !pickupTime" @click="savePickupFromModal">
+                  {{ savingPickup ? 'Saving…' : 'Save pickup time' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div class="form-row">
             <label for="intake-internal-notes">Internal notes</label>
             <textarea
@@ -417,6 +453,9 @@ const showRejectForm = ref(false)
 const rejectReason = ref('')
 const rejectError = ref('')
 const savingReject = ref(false)
+const pickupDate = ref('')
+const pickupTime = ref('')
+const savingPickup = ref(false)
 
 function truncateStr(s: string, len: number): string {
   if (!s || !s.trim()) return '—'
@@ -508,6 +547,14 @@ watch([intakeStatusFilter, intakeSearchQuery, intakeOrdering], () => {
 
 watch(selectedIntakeRequest, (r) => {
   editIntakeNotes.value = r?.internal_notes ?? ''
+  if (r?.pickup_scheduled_at) {
+    const d = new Date(r.pickup_scheduled_at)
+    pickupDate.value = d.toISOString().slice(0, 10)
+    pickupTime.value = d.toTimeString().slice(0, 5)
+  } else {
+    pickupDate.value = ''
+    pickupTime.value = ''
+  }
 }, { immediate: true })
 
 function openIntakeModal(row: Record<string, unknown>) {
@@ -516,6 +563,14 @@ function openIntakeModal(row: Record<string, unknown>) {
   const full = intakeRequests.value.find((r) => r.id === id) ?? null
   selectedIntakeRequest.value = full
   editIntakeNotes.value = full?.internal_notes ?? ''
+  if (full?.pickup_scheduled_at) {
+    const d = new Date(full.pickup_scheduled_at)
+    pickupDate.value = d.toISOString().slice(0, 10)
+    pickupTime.value = d.toTimeString().slice(0, 5)
+  } else {
+    pickupDate.value = ''
+    pickupTime.value = ''
+  }
   intakeError.value = ''
   showRejectForm.value = false
   rejectReason.value = ''
@@ -540,6 +595,40 @@ async function setIntakeStatusFromModal(status: string) {
     loadIntakeRequests()
   } catch (e) {
     intakeError.value = e instanceof Error ? e.message : 'Update failed.'
+  }
+}
+
+function logisticsLabel(r: IntakeRequestSummary): string {
+  const type = r.delivery_type || 'PICKUP'
+  if (type === 'DROP_OFF') {
+    if (r.drop_off_preferred_start || r.drop_off_preferred_end) {
+      const start = r.drop_off_preferred_start ? formatDate(r.drop_off_preferred_start) : ''
+      const end = r.drop_off_preferred_end ? formatDate(r.drop_off_preferred_end) : ''
+      return ['Drop-off', start && `from ${start}`, end && `to ${end}`].filter(Boolean).join(' ')
+    }
+    return 'Drop-off'
+  }
+  if (r.pickup_scheduled_at) {
+    return `Pickup ${formatDate(r.pickup_scheduled_at)}`
+  }
+  return 'Pickup'
+}
+
+async function savePickupFromModal() {
+  if (!selectedIntakeRequest.value || !pickupDate.value || !pickupTime.value) return
+  intakeError.value = ''
+  savingPickup.value = true
+  try {
+    const payload: Parameters<typeof updateIntakeRequest>[1] = {
+      pickup_scheduled_at: new Date(`${pickupDate.value}T${pickupTime.value}`).toISOString(),
+    }
+    const updated = await updateIntakeRequest(selectedIntakeRequest.value.id, payload)
+    selectedIntakeRequest.value = updated
+    await loadIntakeRequests()
+  } catch (e) {
+    intakeError.value = e instanceof Error ? e.message : 'Failed to save pickup time.'
+  } finally {
+    savingPickup.value = false
   }
 }
 
@@ -870,6 +959,50 @@ watch(showIntakeRequests, (visible) => {
 
 .intake-detail-modal .form-row .btn-save-note {
   margin-top: $space-2;
+}
+
+.pickup-schedule-card {
+  margin-top: $space-4;
+  padding: $space-4;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+}
+.pickup-schedule-title {
+  margin: 0 0 $space-1;
+  font-size: $font-size-base;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.pickup-schedule-hint {
+  margin: 0 0 $space-3;
+  font-size: $font-size-sm;
+  color: var(--color-text-muted);
+}
+.pickup-schedule-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: $space-3;
+}
+.pickup-field {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+  min-width: 140px;
+}
+.pickup-field label {
+  font-size: $font-size-sm;
+  font-weight: 500;
+  color: var(--color-text);
+}
+.pickup-input {
+  padding: $space-2 $space-3;
+  font-size: $font-size-base;
+  min-height: 40px;
+}
+.pickup-actions {
+  margin-left: $space-2;
 }
 
 .required { color: var(--color-error); }

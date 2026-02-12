@@ -58,12 +58,13 @@
       <div v-if="requests.length === 0" class="empty-state">No requests yet. Start by creating your first disposal request.</div>
       <div v-else class="request-table">
         <div class="table-head">
-          <span>Date</span><span>Status</span><span>Items</span>
+          <span class="col-date">Date</span><span class="col-status">Status</span><span class="col-items">Items</span><span class="col-logistics">Logistics</span>
         </div>
-        <div v-for="r in requests" :key="r.id" class="table-row">
-          <span>{{ formatDate(r.created_at) }}</span>
-          <span><span class="status-badge" :class="statusClass(r.status)">{{ prettyStatus(r.status) }}</span></span>
-          <span>{{ r.asset_quantities_display || r.asset_types_display.join(', ') }}</span>
+        <div v-for="r in requests" :key="r.id" class="table-row request-row" @click="openRequest(r.id)">
+          <span class="col-date">{{ formatDate(r.created_at) }}</span>
+          <span class="col-status"><span class="status-badge" :class="statusClass(r.status)">{{ prettyStatus(r.status) }}</span></span>
+          <span class="col-items">{{ r.asset_quantities_display || r.asset_types_display.join(', ') }}</span>
+          <span class="col-logistics">{{ logisticsLabel(r) }}</span>
         </div>
       </div>
     </article>
@@ -72,13 +73,14 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { getCustomerContext, getCustomerSustainabilityImpact, getMyIntakeRequests } from '../api'
 import type { IntakeRequestSummary } from '../api'
 
 const requests = ref<IntakeRequestSummary[]>([])
 const impact = ref<null | Awaited<ReturnType<typeof getCustomerSustainabilityImpact>>>(null)
 const route = useRoute()
+const router = useRouter()
 const isReadonlyPortal = computed(() => route.path.includes('/employee-portal/customers/') || Boolean(route.meta.customerPortalReadonly))
 
 onMounted(async () => {
@@ -136,6 +138,29 @@ function prettyStatus(status: string) {
 
 function statusClass(status: string) {
   return `status-${status.toLowerCase()}`
+}
+
+function logisticsLabel(r: IntakeRequestSummary): string {
+  const type = r.delivery_type || 'PICKUP'
+  if (type === 'DROP_OFF') {
+    if (r.drop_off_preferred_start || r.drop_off_preferred_end) {
+      const start = r.drop_off_preferred_start ? formatDate(r.drop_off_preferred_start) : ''
+      const end = r.drop_off_preferred_end ? formatDate(r.drop_off_preferred_end) : ''
+      return ['Drop-off', start && `from ${start}`, end && `to ${end}`].filter(Boolean).join(' ')
+    }
+    return 'Drop-off'
+  }
+  if (r.pickup_scheduled_at) {
+    return `Pickup ${formatDate(r.pickup_scheduled_at)}`
+  }
+  return 'Pickup'
+}
+
+function openRequest(id: string) {
+  const basePath = isReadonlyPortal.value
+    ? `/employee-portal/customers/${String(route.params.customerId || '')}/portal`
+    : '/customer-portal'
+  router.push(`${basePath}/requests/${id}`)
 }
 
 const donutStyle = computed(() => {
@@ -288,10 +313,17 @@ const estimatedCarbonPercent = computed(() => {
 
 .request-table { border: 1px solid var(--color-border); border-radius: $radius-md; overflow: hidden; }
 .table-head, .table-row {
-  display: grid; grid-template-columns: 220px 180px 1fr; gap: $space-3; padding: $space-3 $space-4; align-items: center;
+  display: grid;
+  grid-template-columns: 200px 120px minmax(0, 1fr) minmax(240px, 2fr);
+  gap: $space-3;
+  padding: $space-3 $space-4;
+  align-items: center;
 }
 .table-head { background: var(--color-background); font-size: $font-size-sm; color: var(--color-text-muted); font-weight: 600; }
 .table-row + .table-row { border-top: 1px solid var(--color-border); }
+.request-row { cursor: pointer; }
+.request-row:hover { background: rgba(148, 163, 184, 0.12); }
+.col-logistics { white-space: nowrap; min-width: 0; }
 
 .status-badge {
   display: inline-block; border-radius: 999px; padding: $space-1 $space-2; font-size: $font-size-sm; font-weight: 600;

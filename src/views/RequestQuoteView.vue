@@ -74,6 +74,34 @@
       </section>
 
       <section class="form-section">
+        <h2 class="section-title">Logistics</h2>
+        <p class="section-hint">Let us know if you prefer a pickup or will drop equipment off at our facility.</p>
+        <div class="delivery-toggle">
+          <label class="radio-label">
+            <input v-model="deliveryType" type="radio" value="PICKUP" />
+            We pick up
+          </label>
+          <label class="radio-label">
+            <input v-model="deliveryType" type="radio" value="DROP_OFF" />
+            I will drop off
+          </label>
+        </div>
+        <div v-if="deliveryType === 'DROP_OFF'" class="dropoff-window">
+          <p class="section-hint">Optionally provide your preferred drop-off window.</p>
+          <div class="dropoff-grid">
+            <div>
+              <label class="field-label" for="dropoff-start">Preferred start</label>
+              <input id="dropoff-start" v-model="dropOffStart" type="datetime-local" class="text-input" />
+            </div>
+            <div>
+              <label class="field-label" for="dropoff-end">Preferred end</label>
+              <input id="dropoff-end" v-model="dropOffEnd" type="datetime-local" class="text-input" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
         <h2 class="section-title">Operational Notes</h2>
         <p class="section-hint">Include scheduling preferences, compliance constraints, or packaging notes.</p>
         <label class="field-label" for="notes">Notes</label>
@@ -113,6 +141,9 @@ const contactName = ref('')
 const contactEmail = ref('')
 const contactPhone = ref('')
 const notes = ref('')
+const deliveryType = ref<'PICKUP' | 'DROP_OFF'>('PICKUP')
+const dropOffStart = ref('')
+const dropOffEnd = ref('')
 const submitting = ref(false)
 const submitError = ref('')
 const router = useRouter()
@@ -174,6 +205,11 @@ async function onSubmit() {
       contact_name: contactName.value.trim(),
       contact_email: contactEmail.value.trim(),
       contact_phone: contactPhone.value.trim().slice(0, 64),
+      delivery_type: deliveryType.value,
+    }
+    if (deliveryType.value === 'DROP_OFF') {
+      if (dropOffStart.value) payload.drop_off_preferred_start = new Date(dropOffStart.value).toISOString()
+      if (dropOffEnd.value) payload.drop_off_preferred_end = new Date(dropOffEnd.value).toISOString()
     }
     await createIntakeRequest(payload)
     await router.push('/customer-portal')

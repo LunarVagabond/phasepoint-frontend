@@ -797,6 +797,10 @@ export interface IntakeRequestSummary {
   rejected_reason: string
   accepted_by: string | null
   accepted_at: string | null
+  delivery_type?: 'PICKUP' | 'DROP_OFF'
+  pickup_scheduled_at?: string | null
+  drop_off_preferred_start?: string | null
+  drop_off_preferred_end?: string | null
   created_at: string
   updated_at: string
 }
@@ -822,6 +826,9 @@ export async function createIntakeRequest(data: {
   contact_email?: string
   contact_phone?: string
   notes?: string
+  delivery_type?: 'PICKUP' | 'DROP_OFF'
+  drop_off_preferred_start?: string
+  drop_off_preferred_end?: string
 }): Promise<{ id: string; message: string }> {
   await ensureCsrfCookie()
   const r = await request('/intake-requests/', {
@@ -839,6 +846,22 @@ export async function createIntakeRequest(data: {
     }
     throw new Error(msg)
   }
+  return r.json()
+}
+
+export async function getIntakeRequestHistory(
+  id: string,
+): Promise<
+  Array<{
+    timestamp: string
+    event_type: string
+    user: string | null
+    old_value: unknown
+    new_value: unknown
+  }>
+> {
+  const r = await request(`/intake-requests/${id}/history/`)
+  if (!r.ok) throw new Error('Failed to get intake request history')
   return r.json()
 }
 
@@ -891,7 +914,14 @@ export async function getIntakeRequest(id: string): Promise<IntakeRequestSummary
 
 export async function updateIntakeRequest(
   id: string,
-  data: { status?: string; rejected_reason?: string; internal_notes?: string }
+  data: {
+    status?: string
+    rejected_reason?: string
+    internal_notes?: string
+    pickup_scheduled_at?: string | null
+    drop_off_preferred_start?: string | null
+    drop_off_preferred_end?: string | null
+  }
 ): Promise<IntakeRequestSummary> {
   const r = await request(`/intake-requests/${id}/patch/`, {
     method: 'PATCH',
