@@ -1,5 +1,6 @@
 <template>
   <div class="landing">
+    <PublicSiteHeader title="Secure ITAD Services" />
     <div v-if="showSubmittedAlert" class="submitted-alert" role="alert">
       Request submitted successfully. We will be in touch.
     </div>
@@ -19,7 +20,7 @@
         <h1 class="hero-title">Secure ITAD as if your data and the planet depend on it. They do.</h1>
         <p class="hero-sub">Beyond disposal—we handle data destruction, certified recycling, and full compliance so you can offload responsibility and focus on what's next.</p>
         <div class="hero-cta">
-          <router-link to="/request" class="btn btn-primary">Request a quote</router-link>
+          <router-link to="/customer/register" class="btn btn-primary">Get started</router-link>
         </div>
       </div>
     </header>
@@ -80,14 +81,14 @@
         <div class="cta-block">
           <h2 class="cta-title">Ready to offload the burden?</h2>
           <p class="cta-text">Request a quote for secure, compliant ITAD. We'll get back to you quickly.</p>
-          <router-link to="/request" class="btn btn-primary btn-lg">Request a quote</router-link>
+          <router-link to="/customer/register" class="btn btn-primary btn-lg">Create customer account</router-link>
         </div>
       </section>
     </main>
 
     <footer class="landing-footer">
       <div class="footer-links">
-        <router-link to="/request">Request a quote</router-link>
+        <router-link to="/customer/login">Customer portal</router-link>
         <span class="sep">·</span>
         <router-link to="/employee-portal">Employee portal</router-link>
       </div>
@@ -99,6 +100,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import PublicSiteHeader from '../components/PublicSiteHeader.vue'
 
 const route = useRoute()
 const router = useRouter()

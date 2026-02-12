@@ -37,6 +37,10 @@ async function onSubmit() {
       return
     }
     const me = await getMe()
+    if (me.user_type !== 'EMPLOYEE') {
+      router.push('/customer-portal')
+      return
+    }
     const needsPolicyAccept = !me.acknowledged_bundle_hash || me.current_bundle_hash !== me.acknowledged_bundle_hash
     const redirectTo = (route.query.redirect as string) || '/employee-portal'
     if (needsPolicyAccept) {

@@ -1,16 +1,14 @@
 <template>
-  <div class="request-quote">
+  <div class="request-quote portal-request-page">
     <header class="request-quote-header">
-      <h1 class="request-quote-title">Request a quote</h1>
-      <p class="request-quote-desc">
-        Submit your ITAD request and contact details. We'll respond shortly.
-      </p>
+      <h1 class="request-quote-title">Create Disposal Request</h1>
+      <p class="request-quote-desc">Submit a new request for intake, data wiping, and disposition processing.</p>
     </header>
 
-    <form class="request-quote-form" @submit.prevent="onSubmit">
+    <form class="request-quote-form professional-form" @submit.prevent="onSubmit">
       <section class="form-section">
-        <h2 class="section-title">Asset types</h2>
-        <p class="section-hint">Select each type and enter the number of items.</p>
+        <h2 class="section-title">Asset Inventory</h2>
+        <p class="section-hint">Select each category and provide estimated quantity.</p>
         <div class="asset-types-grid">
           <div v-for="opt in INTAKE_REQUEST_ASSET_TYPES" :key="opt.value" class="asset-type-row">
             <label class="checkbox-label">
@@ -35,62 +33,8 @@
       </section>
 
       <section class="form-section">
-        <h2 class="section-title">Company</h2>
-        <div class="customer-type">
-          <label class="radio-label">
-            <input v-model="customerMode" type="radio" value="existing" />
-            Existing customer
-          </label>
-          <label class="radio-label">
-            <input v-model="customerMode" type="radio" value="new" />
-            New customer
-          </label>
-        </div>
-
-        <div v-if="customerMode === 'existing'" class="customer-existing">
-          <label class="field-label">Search by company name</label>
-          <input
-            v-model="customerSearchQuery"
-            type="text"
-            class="search-input"
-            placeholder="Type to search…"
-            autocomplete="off"
-            @focus="showDropdown = true"
-            @blur="onSearchBlur"
-          />
-          <ul v-if="showDropdown && (customerSearchQuery.length > 0 || customerSearchResults.length)" class="dropdown" role="listbox">
-            <li
-              v-for="c in customerSearchResults"
-              :key="c.id"
-              class="dropdown-item"
-              role="option"
-              :aria-selected="selectedCustomer?.id === c.id"
-              @mousedown.prevent="selectCustomer(c)"
-            >
-              {{ c.name }}
-            </li>
-            <li v-if="customerSearchQuery && customerSearchResults.length === 0 && !searching" class="dropdown-item muted">
-              No matches. Use "New customer" and enter the company name below.
-            </li>
-          </ul>
-          <p v-if="selectedCustomer" class="selected-name">Selected: <strong>{{ selectedCustomer.name }}</strong></p>
-        </div>
-        <div v-else class="customer-new">
-          <label class="field-label">Company name</label>
-          <input
-            v-model="companyName"
-            type="text"
-            class="text-input"
-            placeholder="Your company or organization name"
-            maxlength="255"
-          />
-        </div>
-        <p v-if="errors.company" class="error-inline">{{ errors.company }}</p>
-      </section>
-
-      <section v-if="customerMode === 'new'" class="form-section">
-        <h2 class="section-title">Contact information</h2>
-        <p class="section-hint">We'll use this to follow up on your request.</p>
+        <h2 class="section-title">Primary Contact</h2>
+        <p class="section-hint">Optional updates for this specific request.</p>
         <div class="contact-fields">
           <div class="field-group">
             <label class="field-label" for="contact-name">Contact name</label>
@@ -104,7 +48,7 @@
             />
           </div>
           <div class="field-group">
-            <label class="field-label" for="contact-email">Email <span class="required">*</span></label>
+            <label class="field-label" for="contact-email">Email</label>
             <input
               id="contact-email"
               v-model="contactEmail"
@@ -130,8 +74,8 @@
       </section>
 
       <section class="form-section">
-        <h2 class="section-title">Additional notes</h2>
-        <p class="section-hint">Optional. Tell us about volume, timeline, or special requirements.</p>
+        <h2 class="section-title">Operational Notes</h2>
+        <p class="section-hint">Include scheduling preferences, compliance constraints, or packaging notes.</p>
         <label class="field-label" for="notes">Notes</label>
         <textarea
           id="notes"
@@ -146,33 +90,25 @@
 
       <div class="form-actions">
         <button type="submit" class="btn-primary" :disabled="submitting">
-          {{ submitting ? 'Submitting…' : 'Submit request' }}
+          {{ submitting ? 'Submitting...' : isReadonlyPortal ? 'Read-only Preview' : 'Submit Request' }}
         </button>
         <p v-if="submitError" class="error">{{ submitError }}</p>
       </div>
     </form>
 
     <p class="back-link">
-      <router-link to="/employee-portal">Employee portal</router-link>
+      <router-link to="/customer-portal">Back to customer portal</router-link>
     </p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ensureCsrfCookie, createIntakeRequest, intakeRequestCustomerSearch, INTAKE_REQUEST_ASSET_TYPES } from '../api'
-import type { IntakeRequestCustomerSearchHit } from '../api'
+import { computed, ref, watch, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ensureCsrfCookie, createIntakeRequest, INTAKE_REQUEST_ASSET_TYPES } from '../api'
 
 const assetTypes = ref<string[]>([])
 const assetQuantities = ref<Record<string, number>>({})
-const customerMode = ref<'existing' | 'new'>('new')
-const customerSearchQuery = ref('')
-const customerSearchResults = ref<IntakeRequestCustomerSearchHit[]>([])
-const selectedCustomer = ref<IntakeRequestCustomerSearchHit | null>(null)
-const showDropdown = ref(false)
-const searching = ref(false)
-const companyName = ref('')
 const contactName = ref('')
 const contactEmail = ref('')
 const contactPhone = ref('')
@@ -180,13 +116,12 @@ const notes = ref('')
 const submitting = ref(false)
 const submitError = ref('')
 const router = useRouter()
+const route = useRoute()
+const isReadonlyPortal = computed(() => route.path.includes('/employee-portal/customers/') || Boolean(route.meta.customerPortalReadonly))
 const errors = ref<{
   asset_types?: string
-  company?: string
   contact_email?: string
 }>({})
-
-let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 onMounted(() => {
   ensureCsrfCookie().catch(() => {})
@@ -201,35 +136,6 @@ watch(assetTypes, (selected) => {
   }
 }, { deep: true })
 
-watch(customerSearchQuery, (q) => {
-  if (searchTimer) clearTimeout(searchTimer)
-  selectedCustomer.value = null
-  if (!q.trim()) {
-    customerSearchResults.value = []
-    return
-  }
-  searchTimer = setTimeout(async () => {
-    searching.value = true
-    try {
-      customerSearchResults.value = await intakeRequestCustomerSearch(q.trim())
-    } catch {
-      customerSearchResults.value = []
-    } finally {
-      searching.value = false
-    }
-  }, 300)
-})
-
-function selectCustomer(c: IntakeRequestCustomerSearchHit) {
-  selectedCustomer.value = c
-  customerSearchQuery.value = c.name
-  showDropdown.value = false
-}
-
-function onSearchBlur() {
-  setTimeout(() => { showDropdown.value = false }, 150)
-}
-
 function validate(): boolean {
   errors.value = {}
   const selected = assetTypes.value
@@ -241,25 +147,15 @@ function validate(): boolean {
       errors.value.asset_types = 'Each selected asset type must have a quantity of at least 1.'
     }
   }
-  if (customerMode.value === 'existing') {
-    if (!selectedCustomer.value) {
-      errors.value.company = 'Select a company from the list or switch to New customer.'
-    }
-  } else {
-    if (!companyName.value.trim()) {
-      errors.value.company = 'Enter your company name.'
-    }
-    const email = contactEmail.value.trim()
-    if (!email) {
-      errors.value.contact_email = 'Email is required for new customers.'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.value.contact_email = 'Enter a valid email address.'
-    }
+  const email = contactEmail.value.trim()
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.value.contact_email = 'Enter a valid email address.'
   }
   return Object.keys(errors.value).length === 0
 }
 
 async function onSubmit() {
+  if (isReadonlyPortal.value) return
   submitError.value = ''
   if (!validate()) return
   submitting.value = true
@@ -275,17 +171,12 @@ async function onSubmit() {
       asset_types: selected,
       asset_quantities: quantities,
       notes: notes.value.trim().slice(0, 2000),
-    }
-    if (customerMode.value === 'existing' && selectedCustomer.value) {
-      payload.customer_id = selectedCustomer.value.id
-    } else {
-      payload.company_name = companyName.value.trim()
-      payload.contact_name = contactName.value.trim()
-      payload.contact_email = contactEmail.value.trim()
-      payload.contact_phone = contactPhone.value.trim().slice(0, 64)
+      contact_name: contactName.value.trim(),
+      contact_email: contactEmail.value.trim(),
+      contact_phone: contactPhone.value.trim().slice(0, 64),
     }
     await createIntakeRequest(payload)
-    await router.push({ path: '/', query: { submitted: '1' } })
+    await router.push('/customer-portal')
   } catch (e) {
     submitError.value = e instanceof Error ? e.message : 'Submission failed.'
   } finally {
@@ -298,9 +189,9 @@ async function onSubmit() {
 @use '../styles/variables' as *;
 
 .request-quote {
-  max-width: 640px;
+  max-width: 900px;
   margin: 0 auto;
-  padding: $space-8 $space-4;
+  padding: $space-2 0;
 }
 
 .request-quote-header {
@@ -321,9 +212,8 @@ async function onSubmit() {
   line-height: 1.5;
 }
 
-.form-section {
-  margin-bottom: $space-8;
-}
+.professional-form { display: grid; gap: $space-5; }
+.form-section { margin-bottom: 0; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: $radius-lg; padding: $space-5; box-shadow: var(--shadow-sm); }
 
 .section-title {
   font-size: $font-size-lg;
@@ -350,16 +240,20 @@ async function onSubmit() {
 }
 
 .asset-types-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: $space-3;
 }
 
 .asset-type-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  gap: $space-4;
-  flex-wrap: wrap;
+  gap: $space-3;
+  padding: $space-3;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  background: var(--color-background);
 }
 
 .quantity-wrap {
@@ -402,20 +296,6 @@ async function onSubmit() {
   color: var(--color-text);
 }
 
-.radio-label {
-  display: inline-flex;
-  align-items: center;
-  gap: $space-2;
-  margin-right: $space-6;
-  cursor: pointer;
-}
-
-.customer-existing {
-  position: relative;
-  max-width: 400px;
-}
-
-.search-input,
 .text-input {
   width: 100%;
   padding: $space-3 $space-4;
@@ -426,59 +306,19 @@ async function onSubmit() {
   font-size: $font-size-base;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-.search-input:focus,
 .text-input:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
 }
 
-.dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  max-height: 220px;
-  overflow-y: auto;
-  margin: 0;
-  padding: $space-1;
-  list-style: none;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: $radius-md;
-  box-shadow: var(--shadow-lg);
-  z-index: 10;
-}
-
-.dropdown-item {
-  padding: $space-2 $space-3;
-  cursor: pointer;
-  border-radius: $radius-sm;
-}
-.dropdown-item:hover {
-  background: var(--color-border);
-}
-.dropdown-item.muted {
-  color: var(--color-text-muted);
-  cursor: default;
-}
-
-.selected-name {
-  margin: $space-2 0 0;
-  font-size: $font-size-sm;
-  color: var(--color-text-muted);
-}
-
-.customer-new .text-input {
-  max-width: 400px;
-}
-
 .contact-fields {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: $space-4;
 }
-@media (max-width: 520px) {
+@media (max-width: 900px) {
+  .asset-types-grid { grid-template-columns: 1fr; }
   .contact-fields {
     grid-template-columns: 1fr;
   }
@@ -522,7 +362,10 @@ async function onSubmit() {
 }
 
 .form-actions {
-  margin-top: $space-8;
+  margin-top: $space-2;
+  display: flex;
+  align-items: center;
+  gap: $space-3;
 }
 
 .btn-primary {

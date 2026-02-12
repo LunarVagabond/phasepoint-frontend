@@ -35,12 +35,24 @@
         </button>
       </article>
       <article class="report-card">
+        <h2 class="report-card-title">KPI dashboard export</h2>
+        <p class="report-card-desc">
+          Assets processed by employee, stage distribution, sustainability totals, and open workflow alerts.
+        </p>
+        <button type="button" class="report-download" @click="download('reports/kpis/', 'kpi_report')">
+          Download CSV
+        </button>
+      </article>
+      <article class="report-card">
         <h2 class="report-card-title">Audit events</h2>
         <p class="report-card-desc">
           Full audit event export (same data as user action logs) for compliance and external systems.
         </p>
         <button type="button" class="report-download" @click="download('reports/audit-events/', 'audit_events')">
           Download CSV
+        </button>
+        <button type="button" class="report-download" @click="downloadPdf('reports/kpis/', 'kpi_report')">
+          Download KPI PDF
         </button>
       </article>
     </section>
@@ -67,6 +79,18 @@ async function download(path: string, name: string) {
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)
   a.download = `${name}.csv`
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
+async function downloadPdf(path: string, name: string) {
+  const pathNorm = path.startsWith('/') ? path : `/${path}`
+  const r = await request(`${pathNorm}?format=pdf`)
+  if (!r.ok) throw new Error('Failed to get PDF report')
+  const blob = await r.blob()
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `${name}.pdf`
   a.click()
   URL.revokeObjectURL(a.href)
 }

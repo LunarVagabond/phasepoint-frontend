@@ -28,6 +28,9 @@ export interface MeResponse {
   acknowledged_bundle_hash: string | null
   current_bundle_hash: string
   groups_display: string[]
+  user_type: 'CUSTOMER' | 'EMPLOYEE'
+  customer: string | null
+  customer_profile_complete?: boolean
 }
 
 export interface CustomerSummary {
@@ -37,6 +40,12 @@ export interface CustomerSummary {
   email: string
   phone: string
   address: string
+  address_line1?: string
+  address_line2?: string
+  city?: string
+  province?: string
+  country?: string
+  postal_code?: string
   notes: string
   created_at: string
 }
@@ -88,9 +97,14 @@ export async function updateCustomer(
 let csrfTokenFromApi: string | null = null
 
 function getCsrfToken(): string | null {
-  if (csrfTokenFromApi) return csrfTokenFromApi
   const match = document.cookie.match(/csrftoken=([^;]+)/)
-  return match ? match[1].trim() : null
+  if (match?.[1]) {
+    const token = match[1].trim()
+    csrfTokenFromApi = token
+    return token
+  }
+  if (csrfTokenFromApi) return csrfTokenFromApi
+  return null
 }
 
 export async function ensureCsrfCookie(): Promise<void> {
@@ -119,7 +133,21 @@ async function request(path: string, options: RequestInit = {}): Promise<Respons
     }
     if (token) headers['X-CSRFToken'] = token
   }
-  return fetch(url, { ...options, credentials: 'include', headers })
+  let response = await fetch(url, { ...options, credentials: 'include', headers })
+  if (method !== 'GET' && method !== 'HEAD' && response.status === 403) {
+    const text = await response.clone().text()
+    if (text.toLowerCase().includes('csrf failed')) {
+      csrfTokenFromApi = null
+      await ensureCsrfCookie()
+      const retryToken = getCsrfToken()
+      const retryHeaders: Record<string, string> = {
+        ...headers,
+      }
+      if (retryToken) retryHeaders['X-CSRFToken'] = retryToken
+      response = await fetch(url, { ...options, credentials: 'include', headers: retryHeaders })
+    }
+  }
+  return response
 }
 
 export async function getBundleHash(): Promise<{ bundle_hash: string }> {
@@ -257,9 +285,13 @@ export interface UserSummary {
   id: string
   username: string
   email: string
+  first_name: string
+  last_name: string
   employee_id: string
   is_active: boolean
   is_staff: boolean
+  user_type: 'CUSTOMER' | 'EMPLOYEE'
+  customer: string | null
   groups_display: string[]
 }
 
@@ -270,6 +302,12 @@ export interface GroupSummary {
 
 export async function getUsers(): Promise<UserSummary[]> {
   const r = await request('/users/')
+  if (!r.ok) throw new Error('Failed to get users')
+  return r.json()
+}
+
+export async function getUsersByType(userType: 'EMPLOYEE' | 'CUSTOMER'): Promise<UserSummary[]> {
+  const r = await request(`/users/?user_type=${userType}`)
   if (!r.ok) throw new Error('Failed to get users')
   return r.json()
 }
@@ -299,6 +337,195 @@ export async function getOwnerChoices(): Promise<OwnerChoicesResponse> {
 export async function createUser(data: { username: string; password: string; email?: string; employee_id?: string }): Promise<UserSummary> {
   const r = await request('/users/create/', { method: 'POST', body: JSON.stringify(data) })
   if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+
+export async function registerCustomer(data: {
+  username: string
+  password: string
+  company_name: string
+  email?: string
+  phone?: string
+}): Promise<{ user: string; id: string; user_type: 'CUSTOMER' | 'EMPLOYEE' }> {
+  const r = await request('/auth/register-customer/', { method: 'POST', body: JSON.stringify(data) })
+  if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+
+export interface CustomerProfile {
+  id: string
+  name: string
+  email: string
+  phone: string
+  address: string
+  address_line1: string
+  address_line2: string
+  city: string
+  province: string
+  country: string
+  postal_code: string
+  notes: string
+}
+
+export async function getCustomerProfile(): Promise<CustomerProfile> {
+  const r = await request('/customer/profile/')
+  if (!r.ok) throw new Error('Failed to get customer profile')
+  return r.json()
+}
+
+export async function updateCustomerProfile(data: {
+  email: string
+  phone: string
+  address_line1: string
+  address_line2?: string
+  city: string
+  province: string
+  country: string
+  postal_code: string
+}): Promise<CustomerProfile> {
+  const r = await request('/customer/profile/', { method: 'PATCH', body: JSON.stringify(data) })
+  if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+
+export interface AddressSuggestion {
+  display_name: string
+  address_line1: string
+  city: string
+  province: string
+  country: string
+  postal_code: string
+}
+
+const US_STATE_NAME_TO_CODE: Record<string, string> = {
+  alabama: 'AL', alaska: 'AK', arizona: 'AZ', arkansas: 'AR', california: 'CA', colorado: 'CO',
+  connecticut: 'CT', delaware: 'DE', florida: 'FL', georgia: 'GA', hawaii: 'HI', idaho: 'ID',
+  illinois: 'IL', indiana: 'IN', iowa: 'IA', kansas: 'KS', kentucky: 'KY', louisiana: 'LA',
+  maine: 'ME', maryland: 'MD', massachusetts: 'MA', michigan: 'MI', minnesota: 'MN', mississippi: 'MS',
+  missouri: 'MO', montana: 'MT', nebraska: 'NE', nevada: 'NV', 'new hampshire': 'NH', 'new jersey': 'NJ',
+  'new mexico': 'NM', 'new york': 'NY', 'north carolina': 'NC', 'north dakota': 'ND', ohio: 'OH',
+  oklahoma: 'OK', oregon: 'OR', pennsylvania: 'PA', 'rhode island': 'RI', 'south carolina': 'SC',
+  'south dakota': 'SD', tennessee: 'TN', texas: 'TX', utah: 'UT', vermont: 'VT', virginia: 'VA',
+  washington: 'WA', 'west virginia': 'WV', wisconsin: 'WI', wyoming: 'WY', 'district of columbia': 'DC',
+}
+
+function normalizeUsStateCode(address: Record<string, string | undefined>): string {
+  const raw = (address.state_code || address.state || '').trim()
+  if (!raw) return ''
+  const upper = raw.toUpperCase()
+  if (/^[A-Z]{2}$/.test(upper)) return upper
+  const isoLvl4 = (address['ISO3166-2-lvl4'] || '').trim().toUpperCase()
+  if (isoLvl4.startsWith('US-') && isoLvl4.length >= 5) {
+    return isoLvl4.slice(3, 5)
+  }
+  return US_STATE_NAME_TO_CODE[raw.toLowerCase()] || ''
+}
+
+function pickAddressLine1(address: Record<string, string | undefined>): string {
+  const number = address.house_number || ''
+  const road = address.road || address.residential || address.pedestrian || ''
+  return [number, road].filter(Boolean).join(' ').trim()
+}
+
+function pickCity(address: Record<string, string | undefined>): string {
+  return address.city || address.town || address.village || address.hamlet || ''
+}
+
+export async function searchUsAddresses(query: string): Promise<AddressSuggestion[]> {
+  const q = query.trim()
+  if (q.length < 3) return []
+  const buildUrl = (queryText: string, restrictUs: boolean) => {
+    const url = new URL('https://nominatim.openstreetmap.org/search')
+    url.searchParams.set('q', queryText)
+    url.searchParams.set('format', 'jsonv2')
+    url.searchParams.set('addressdetails', '1')
+    url.searchParams.set('limit', '8')
+    if (restrictUs) url.searchParams.set('countrycodes', 'us')
+    return url.toString()
+  }
+  const requestOnce = async (queryText: string, restrictUs: boolean) => {
+    const r = await fetch(buildUrl(queryText, restrictUs), { headers: { Accept: 'application/json' } })
+    if (!r.ok) return [] as Array<{ display_name?: string; address?: Record<string, string | undefined> }>
+    return (await r.json()) as Array<{ display_name?: string; address?: Record<string, string | undefined> }>
+  }
+
+  const [primary, fallback] = await Promise.all([
+    requestOnce(q, true),
+    requestOnce(`${q}, USA`, false),
+  ])
+  const seen = new Set<string>()
+  const rows = [...primary, ...fallback].filter((row) => {
+    const key = row.display_name || ''
+    if (!key || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+  return rows
+    .map((row) => {
+      const addr = row.address || {}
+      const stateCode = normalizeUsStateCode(addr)
+      return {
+        display_name: row.display_name || '',
+        address_line1: pickAddressLine1(addr),
+        city: pickCity(addr),
+        province: stateCode,
+        country: 'United States',
+        postal_code: addr.postcode || '',
+      }
+    })
+    .filter((row) => !!row.address_line1 && !!row.city)
+}
+
+export async function getCustomerUsers(): Promise<UserSummary[]> {
+  const r = await request('/customer/users/')
+  if (!r.ok) throw new Error('Failed to get customer users')
+  return r.json()
+}
+
+export async function createCustomerPortalUser(data: {
+  username: string
+  password: string
+  email?: string
+  first_name?: string
+  last_name?: string
+}): Promise<UserSummary> {
+  const r = await request('/customer/users/create/', { method: 'POST', body: JSON.stringify(data) })
+  if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+
+export interface CustomerUserProfile {
+  id: string
+  username: string
+  email: string
+  first_name: string
+  last_name: string
+}
+
+export async function getCustomerMyProfile(): Promise<CustomerUserProfile> {
+  const r = await request('/customer/me-profile/')
+  if (!r.ok) throw new Error('Failed to get user profile')
+  return r.json()
+}
+
+export async function updateCustomerMyProfile(data: {
+  email: string
+  first_name?: string
+  last_name?: string
+}): Promise<CustomerUserProfile> {
+  const r = await request('/customer/me-profile/', { method: 'PATCH', body: JSON.stringify(data) })
+  if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+
+export async function getCustomerContext(customerId: string): Promise<{
+  customer: CustomerProfile
+  users: UserSummary[]
+  requests: Array<{ id: string; status: string; asset_quantities: Record<string, number>; created_at: string; updated_at: string }>
+  sustainability: { total_weight_kg: number; recycled_weight_kg: number; disposed_weight_kg: number; reused_weight_kg: number }
+}> {
+  const r = await request(`/customers/${customerId}/context/`)
+  if (!r.ok) throw new Error('Failed to get customer context')
   return r.json()
 }
 
@@ -509,6 +736,13 @@ export async function getReport(path: string, format: 'json' | 'csv' = 'json'): 
   return r.json()
 }
 
+export async function getKpis(format: 'json' | 'csv' | 'pdf' = 'json'): Promise<unknown | Blob> {
+  const r = await request(`/reports/kpis/?format=${format}`)
+  if (!r.ok) throw new Error('Failed to get KPI report')
+  if (format === 'json') return r.json()
+  return r.blob()
+}
+
 export interface AuditEventSummary {
   id: string
   asset_id: string | null
@@ -605,6 +839,32 @@ export async function createIntakeRequest(data: {
     }
     throw new Error(msg)
   }
+  return r.json()
+}
+
+export async function getMyIntakeRequests(): Promise<IntakeRequestSummary[]> {
+  const r = await request('/customer/intake-requests/')
+  if (!r.ok) throw new Error('Failed to get customer request history')
+  return r.json()
+}
+
+export async function getCustomerSustainabilityImpact(): Promise<{
+  total_weight_kg: number
+  recycled_weight_kg: number
+  disposed_weight_kg: number
+  reused_weight_kg: number
+  recycled_percent: number
+  disposed_percent: number
+  reused_percent: number
+}> {
+  const r = await request('/customer/sustainability-impact/')
+  if (!r.ok) throw new Error('Failed to get sustainability impact')
+  return r.json()
+}
+
+export async function getCustomerTerms(): Promise<{ title: string; content: string }> {
+  const r = await request('/customer/terms/')
+  if (!r.ok) throw new Error('Failed to get terms')
   return r.json()
 }
 

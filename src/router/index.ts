@@ -2,7 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
   { path: '/', name: 'Landing', component: () => import('../views/LandingView.vue'), meta: { guest: true, title: 'Phasepoint' } },
-  { path: '/request', name: 'RequestQuote', component: () => import('../views/RequestQuoteView.vue'), meta: { guest: true, title: 'Request a quote' } },
+  { path: '/customer/login', name: 'CustomerLogin', component: () => import('../views/CustomerLoginView.vue'), meta: { guest: true, title: 'Customer portal' } },
+  { path: '/customer/register', name: 'CustomerRegister', component: () => import('../views/CustomerRegisterView.vue'), meta: { guest: true, title: 'Customer register' } },
   {
     path: '/kiosk',
     name: 'Kiosk',
@@ -13,7 +14,7 @@ const routes = [
   {
     path: '/employee-portal',
     component: () => import('../views/AppLayout.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, employeeOnly: true },
     children: [
       { path: '', name: 'Dashboard', component: () => import('../views/DashboardView.vue'), meta: { title: 'Dashboard' } },
       { path: 'intake', name: 'Intake', component: () => import('../views/IntakeView.vue'), meta: { title: 'Intake' } },
@@ -21,6 +22,19 @@ const routes = [
       { path: 'batches', name: 'Batches', component: () => import('../views/BatchesListView.vue'), meta: { title: 'Batches' } },
       { path: 'audit', name: 'Audit', component: () => import('../views/AuditTrailView.vue'), meta: { title: 'Audit trail' } },
       { path: 'reports', name: 'Reports', component: () => import('../views/ReportsView.vue'), meta: { title: 'Reports' } },
+      { path: 'customers/:customerId/context', name: 'CustomerContextInternal', component: () => import('../views/CustomerContextInternalView.vue'), meta: { title: 'Customer Context' } },
+      {
+        path: 'customers/:customerId/portal',
+        component: () => import('../views/CustomerPortalLayout.vue'),
+        meta: { employeeOnly: true, customerPortalReadonly: true, title: 'Customer Portal Preview' },
+        children: [
+          { path: '', name: 'CustomerPortalPreviewDashboard', component: () => import('../views/CustomerDashboardView.vue'), meta: { title: 'Customer Dashboard', customerPortalReadonly: true } },
+          { path: 'terms', name: 'CustomerPortalPreviewTerms', component: () => import('../views/CustomerTermsView.vue'), meta: { title: 'Terms & Conditions', customerPortalReadonly: true } },
+          { path: 'requests/new', name: 'CustomerPortalPreviewRequest', component: () => import('../views/RequestQuoteView.vue'), meta: { title: 'Create Request', customerPortalReadonly: true } },
+          { path: 'users', name: 'CustomerPortalPreviewUsers', component: () => import('../views/CustomerPortalUsersView.vue'), meta: { title: 'Team Users', customerPortalReadonly: true } },
+          { path: 'profile', name: 'CustomerPortalPreviewProfile', component: () => import('../views/CustomerProfileView.vue'), meta: { title: 'Profile', customerPortalReadonly: true } },
+        ],
+      },
       {
         path: 'policies',
         component: () => import('../views/PolicyWikiLayout.vue'),
@@ -38,6 +52,18 @@ const routes = [
         component: () => import('../views/PolicyEditorView.vue'),
         meta: { requiresPolicyEditor: true, title: 'Edit Policy' },
       },
+    ],
+  },
+  {
+    path: '/customer-portal',
+    component: () => import('../views/CustomerPortalLayout.vue'),
+    meta: { requiresAuth: true, customerOnly: true },
+    children: [
+      { path: '', name: 'CustomerDashboard', component: () => import('../views/CustomerDashboardView.vue'), meta: { title: 'Customer Dashboard' } },
+      { path: 'requests/new', name: 'CustomerRequest', component: () => import('../views/RequestQuoteView.vue'), meta: { title: 'Create Request', customerOnly: true } },
+      { path: 'users', name: 'CustomerPortalUsers', component: () => import('../views/CustomerPortalUsersView.vue'), meta: { title: 'Team Users', customerOnly: true } },
+      { path: 'profile', name: 'CustomerProfile', component: () => import('../views/CustomerProfileView.vue'), meta: { title: 'Profile', customerOnly: true } },
+      { path: 'terms', name: 'CustomerTerms', component: () => import('../views/CustomerTermsView.vue'), meta: { title: 'Terms & Conditions', customerOnly: true } },
     ],
   },
 ]
@@ -60,13 +86,21 @@ router.beforeEach(async (to) => {
     return true
   }
   if (to.name === 'Login') {
+    if (me.user_type === 'CUSTOMER') return '/customer-portal'
     const redirect = (to.query.redirect as string) || '/employee-portal'
     return typeof redirect === 'string' && redirect.startsWith('/') ? redirect : '/employee-portal'
   }
+  if (to.meta.employeeOnly && me.user_type !== 'EMPLOYEE') return '/customer-portal'
+  if (to.path.startsWith('/employee-portal') && me.user_type !== 'EMPLOYEE') return '/customer-portal'
+  if (to.meta.customerOnly && me.user_type !== 'CUSTOMER') return '/employee-portal'
+  const isEmployeeRoute = to.path.startsWith('/employee-portal')
+  const isEmployeeUser = me.user_type === 'EMPLOYEE'
   const currentHash = me.current_bundle_hash
   const acknowledgedHash = me.acknowledged_bundle_hash
   const needsPolicyAccept = !acknowledgedHash || currentHash !== acknowledgedHash
-  if (to.meta.requiresAuth && needsPolicyAccept) return { name: 'Policies', query: { redirect: to.fullPath } }
+  if (isEmployeeRoute && isEmployeeUser && to.meta.requiresAuth && needsPolicyAccept) {
+    return { name: 'Policies', query: { redirect: to.fullPath } }
+  }
   if (to.meta.requiresPolicyEditor) {
     const { canEditPolicies } = await import('../api')
     if (!canEditPolicies(me)) {

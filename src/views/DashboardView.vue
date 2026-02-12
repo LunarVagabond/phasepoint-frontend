@@ -55,6 +55,15 @@
         </template>
       </DataTable>
     </section>
+    <section class="dashboard-section">
+      <h2 class="section-title">Customer Users</h2>
+      <DataTable
+        :columns="customerUserColumns"
+        :data="customerUsersTableData"
+        :loading="loading"
+        row-key="id"
+      />
+    </section>
 
     <section v-if="showIntakeRequests" class="dashboard-section">
       <h2 class="section-title">Intake requests</h2>
@@ -198,7 +207,7 @@
           <dt>Phone</dt>
           <dd>{{ selectedCustomer.phone || '—' }}</dd>
           <dt>Address</dt>
-          <dd class="detail-notes">{{ selectedCustomer.address || '—' }}</dd>
+          <dd class="detail-notes">{{ formatCustomerAddress(selectedCustomer) }}</dd>
         </dl>
         <div class="form-row">
           <label class="field-label" for="customer-notes">Internal notes</label>
@@ -212,6 +221,13 @@
         </div>
         <p v-if="customerSaveError" class="modal-error">{{ customerSaveError }}</p>
         <div class="modal-actions">
+          <router-link
+            v-if="selectedCustomer && canViewCustomerContext"
+            class="btn-secondary"
+            :to="`/employee-portal/customers/${selectedCustomer.id}/portal`"
+          >
+            Open customer portal (read-only)
+          </router-link>
           <button type="button" class="btn-secondary" @click="closeCustomerModal">Close</button>
           <button type="button" class="btn-primary" :disabled="savingCustomer" @click="saveCustomerNotes">Save notes</button>
         </div>
@@ -275,7 +291,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
-import { getUsers, getGroups, createUser, updateUser, deleteUser, getMe, getCustomers, createCustomer, updateCustomer, getCustodyRequests, cancelCustodyRequest, canSeeIntakeRequests, getIntakeRequests, updateIntakeRequest } from '../api'
+import { getUsersByType, getGroups, createUser, updateUser, deleteUser, getMe, getCustomers, createCustomer, updateCustomer, getCustodyRequests, cancelCustodyRequest, canSeeIntakeRequests, getIntakeRequests, updateIntakeRequest } from '../api'
 import DataTable from '../components/DataTable.vue'
 import type { UserSummary, CustomerSummary, CustodyRequestSummary, IntakeRequestSummary, MeResponse } from '../api'
 import type { DataTableColumn } from '../components/DataTable.vue'
@@ -293,8 +309,14 @@ const customerColumns: DataTableColumn[] = [
   { key: 'name', label: 'Company', type: 'strong' },
   { key: 'email', label: 'Email' },
   { key: 'phone', label: 'Phone' },
-  { key: 'address', label: 'Address' },
+  { key: 'address_display', label: 'Address' },
   { key: 'notes_short', label: 'Internal notes' },
+]
+const customerUserColumns: DataTableColumn[] = [
+  { key: 'username', label: 'Username', type: 'strong' },
+  { key: 'email', label: 'Email' },
+  { key: 'customer_name', label: 'Company' },
+  { key: 'active_display', label: 'Active', type: 'badge' },
 ]
 
 const openRequestsColumns: DataTableColumn[] = [
@@ -311,18 +333,31 @@ const intakeColumns: DataTableColumn[] = [
   { key: 'status', label: 'Status', type: 'badge' },
 ]
 
-const users = ref<UserSummary[]>([])
+const employeeUsers = ref<UserSummary[]>([])
+const customerUsers = ref<UserSummary[]>([])
 const groups = ref<Awaited<ReturnType<typeof getGroups>>>([])
 const me = ref<MeResponse | null>(null)
 const meId = computed(() => me.value?.id ?? null)
 const showIntakeRequests = computed(() => canSeeIntakeRequests(me.value ?? undefined))
+const canViewCustomerContext = computed(() => {
+  if (!me.value) return false
+  if (me.value.is_staff) return true
+  const groups = (me.value.groups_display || []).map((g) => g.toLowerCase())
+  return groups.includes('customer_relations')
+})
 const loading = ref(true)
 const tableData = computed(() =>
-  users.value.map((u) => ({
+  employeeUsers.value.map((u) => ({
     ...u,
     active_display: u.is_active ? 'Yes' : 'No',
     staff_display: u.is_staff ? 'Yes' : 'No',
     groups_str: u.groups_display.length ? u.groups_display.join(', ') : '—',
+  }))
+)
+const customerUsersTableData = computed(() =>
+  customerUsers.value.map((u) => ({
+    ...u,
+    active_display: u.is_active ? 'Yes' : 'No',
   }))
 )
 
@@ -331,6 +366,7 @@ const customersLoading = ref(true)
 const customersTableData = computed(() =>
   customers.value.map((c) => ({
     ...c,
+    address_display: formatCustomerAddress(c),
     notes_short: truncateStr(c.notes || '', 40),
   }))
 )
@@ -388,6 +424,18 @@ function truncateStr(s: string, len: number): string {
   return t.length <= len ? t : t.slice(0, len) + '…'
 }
 
+function formatCustomerAddress(c: CustomerSummary): string {
+  const line1 = (c.address_line1 || '').trim()
+  const line2 = (c.address_line2 || '').trim()
+  const city = (c.city || '').trim()
+  const state = (c.province || '').trim()
+  const postal = (c.postal_code || '').trim()
+  const primary = [line1, line2].filter(Boolean).join(', ')
+  const locality = [city, state, postal].filter(Boolean).join(' ')
+  const structured = [primary, locality].filter(Boolean).join(', ')
+  return structured || (c.address || '').trim() || '—'
+}
+
 const intakeTableData = computed(() =>
   intakeRequests.value.map((r) => ({
     ...r,
@@ -420,8 +468,14 @@ const saving = ref(false)
 
 async function load() {
   try {
-    const [userList, groupList, meRes] = await Promise.all([getUsers(), getGroups(), getMe()])
-    users.value = userList
+    const [employeeList, customerList, groupList, meRes] = await Promise.all([
+      getUsersByType('EMPLOYEE'),
+      getUsersByType('CUSTOMER'),
+      getGroups(),
+      getMe(),
+    ])
+    employeeUsers.value = employeeList
+    customerUsers.value = customerList
     groups.value = groupList
     me.value = meRes
   } finally {
