@@ -1,19 +1,16 @@
 <template>
   <div class="dashboard">
     <section class="dashboard-section">
-      <h2 class="section-title">My open custody requests</h2>
-      <p class="section-desc">Cancel a request if you no longer want to move the asset.</p>
+      <h2 class="section-title">My open work orders</h2>
+      <p class="section-desc">Work orders assigned to you that are in progress.</p>
       <DataTable
-        :columns="openRequestsColumns"
-        :data="openRequestsData"
-        :loading="openRequestsLoading"
+        :columns="workOrdersColumns"
+        :data="openWorkOrdersData"
+        :loading="workOrdersLoading"
         row-key="id"
-      >
-        <template #row-actions="{ row }">
-          <button type="button" class="btn-sm btn-cancel" @click="cancelRequest(row)">Cancel request</button>
-        </template>
-      </DataTable>
-      <p v-if="!openRequestsLoading && openRequests.length === 0" class="modal-muted">No open custody requests.</p>
+        :row-click="openWorkOrder"
+      />
+      <p v-if="!workOrdersLoading && openWorkOrders.length === 0" class="modal-muted">No open work orders.</p>
     </section>
     <section class="dashboard-section">
       <div class="section-head">
@@ -509,9 +506,9 @@
 <script setup lang="ts">
 // TODO: consider extracting AddEmployeeModal, AddCustomerModal, EditEmployeeModal into reusable components
 import { ref, reactive, computed, watch, onMounted } from 'vue'
-import { getUsersByType, getGroups, createUser, updateUser, deleteUser, getMe, getCustomers, createCustomer, updateCustomer, getCustodyRequests, cancelCustodyRequest, canSeeIntakeRequests, getIntakeRequests, updateIntakeRequest, searchUsAddresses } from '../api'
+import { getUsersByType, getGroups, createUser, updateUser, deleteUser, getMe, getCustomers, createCustomer, updateCustomer, canSeeIntakeRequests, getIntakeRequests, updateIntakeRequest, searchUsAddresses, getWorkOrders } from '../api'
 import DataTable from '../components/DataTable.vue'
-import type { UserSummary, CustomerSummary, CustodyRequestSummary, IntakeRequestSummary, MeResponse } from '../api'
+import type { UserSummary, CustomerSummary, IntakeRequestSummary, MeResponse, WorkOrderSummary } from '../api'
 import type { DataTableColumn } from '../components/DataTable.vue'
 
 const employeeColumns: DataTableColumn[] = [
@@ -536,11 +533,12 @@ const customerUserColumns: DataTableColumn[] = [
   { key: 'customer_name', label: 'Company' },
 ]
 
-const openRequestsColumns: DataTableColumn[] = [
-  { key: 'asset_internal_id', label: 'Asset', type: 'strong' },
-  { key: 'from_location', label: 'From' },
-  { key: 'to_location', label: 'To' },
-  { key: 'request_timestamp_display', label: 'Requested' },
+const workOrdersColumns: DataTableColumn[] = [
+  { key: 'work_order_number', label: 'Work Order', type: 'strong' },
+  { key: 'status', label: 'Status', type: 'badge' },
+  { key: 'asset_count', label: 'Assets' },
+  { key: 'intended_action', label: 'Action' },
+  { key: 'created_at_display', label: 'Created' },
 ]
 
 const intakeColumns: DataTableColumn[] = [
@@ -628,12 +626,12 @@ const confirmDialog = ref<{
 const confirmError = ref('')
 const confirmPending = ref(false)
 
-const openRequests = ref<CustodyRequestSummary[]>([])
-const openRequestsLoading = ref(true)
-const openRequestsData = computed(() =>
-  openRequests.value.map((r) => ({
-    ...r,
-    request_timestamp_display: formatDate(r.request_timestamp),
+const openWorkOrders = ref<WorkOrderSummary[]>([])
+const workOrdersLoading = ref(true)
+const openWorkOrdersData = computed(() =>
+  openWorkOrders.value.map((wo) => ({
+    ...wo,
+    created_at_display: formatDate(wo.created_at),
   }))
 )
 
@@ -1101,36 +1099,29 @@ function removeUser(row: UserSummary | Record<string, unknown>) {
   confirmError.value = ''
 }
 
-async function loadOpenRequests() {
+async function loadOpenWorkOrders() {
   try {
-    openRequests.value = await getCustodyRequests({ status: 'pending', mine: true })
+    const workOrders = await getWorkOrders({ assigned_to: 'me', status: 'CREATED' })
+    const inProgress = await getWorkOrders({ assigned_to: 'me', status: 'IN_PROGRESS' })
+    openWorkOrders.value = [...workOrders, ...inProgress]
   } catch {
-    openRequests.value = []
+    openWorkOrders.value = []
   } finally {
-    openRequestsLoading.value = false
+    workOrdersLoading.value = false
   }
 }
 
-function cancelRequest(row: CustodyRequestSummary | Record<string, unknown>) {
-  const request = row as CustodyRequestSummary
-  const assetId = request.asset_internal_id || request.asset
-  confirmDialog.value = {
-    show: true,
-    title: 'Cancel custody request',
-    message: `Cancel move request for asset ${assetId}?`,
-    confirmLabel: 'Cancel request',
-    onConfirm: async () => {
-      await cancelCustodyRequest(request.id)
-      await loadOpenRequests()
-    },
-  }
-  confirmError.value = ''
+function openWorkOrder(row: Record<string, unknown>) {
+  const id = row.id as string
+  if (!id) return
+  // Navigate to assets page filtered by work order
+  window.location.href = `/employee-portal/assets?work_order=${id}`
 }
 
 onMounted(async () => {
   await load()
   loadCustomers()
-  loadOpenRequests()
+  loadOpenWorkOrders()
   if (showIntakeRequests.value) loadIntakeRequests()
 })
 

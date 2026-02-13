@@ -73,7 +73,7 @@
 
       <article class="card">
         <h3>History</h3>
-        <p v-if="history.length === 0" class="empty-history">No history events recorded yet.</p>
+        <p v-if="history.length === 0 && workOrders.length === 0" class="empty-history">No history events recorded yet.</p>
         <ol v-else class="timeline">
           <li v-for="ev in history" :key="ev.timestamp + ev.event_type" class="timeline-item">
             <div class="timeline-meta">
@@ -83,6 +83,19 @@
             </div>
             <ul class="payload-readable">
               <li v-for="(line, i) in formatEventDetailReadable(ev)" :key="i">{{ line }}</li>
+            </ul>
+          </li>
+          <li v-for="wo in workOrders" :key="wo.id" class="timeline-item">
+            <div class="timeline-meta">
+              <span class="time">{{ formatDate(wo.created_at) }}</span>
+              <span class="event-type">Work Order Created</span>
+              <span v-if="wo.assigned_to_username" class="user">assigned to {{ wo.assigned_to_username }}</span>
+            </div>
+            <ul class="payload-readable">
+              <li>Work Order: {{ wo.work_order_number }}</li>
+              <li>Status: {{ wo.status }}</li>
+              <li>Assets: {{ wo.asset_count }}</li>
+              <li v-if="wo.completed_at">Completed: {{ formatDate(wo.completed_at) }}</li>
             </ul>
           </li>
         </ol>
@@ -158,7 +171,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { getIntakeRequest, getIntakeRequestHistory, getIntakeRequestAssets, getEventTypeDisplay, getIntakeRequestStatusDisplay, updateIntakeRequest, type IntakeRequestSummary, type IntakeRequestAssetSummary } from '../api'
+import { getIntakeRequest, getIntakeRequestHistory, getIntakeRequestAssets, getIntakeRequestWorkOrders, getEventTypeDisplay, getIntakeRequestStatusDisplay, updateIntakeRequest, type IntakeRequestSummary, type IntakeRequestAssetSummary, type WorkOrderSummary } from '../api'
 
 const route = useRoute()
 const id = computed(() => String(route.params.id || ''))
@@ -184,6 +197,7 @@ const savingDropoff = ref(false)
 const dropoffError = ref('')
 const requestAssets = ref<IntakeRequestAssetSummary[]>([])
 const selectedAsset = ref<IntakeRequestAssetSummary | null>(null)
+const workOrders = ref<WorkOrderSummary[]>([])
 
 const canEditDropoff = computed(() => !route.meta.customerPortalReadonly)
 
@@ -276,12 +290,14 @@ async function load() {
       throw new Error('Missing request id.')
     }
     request.value = await getIntakeRequest(id.value)
-    const [historyData, assetsData] = await Promise.all([
+    const [historyData, assetsData, workOrdersData] = await Promise.all([
       getIntakeRequestHistory(id.value),
       getIntakeRequestAssets(id.value),
+      getIntakeRequestWorkOrders(id.value).catch(() => []),
     ])
     history.value = historyData
     requestAssets.value = assetsData
+    workOrders.value = workOrdersData
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load request.'
   } finally {
@@ -301,6 +317,7 @@ async function saveDropoff() {
     request.value = { ...request.value, ...updated }
     history.value = await getIntakeRequestHistory(request.value.id)
     requestAssets.value = await getIntakeRequestAssets(request.value.id)
+    workOrders.value = await getIntakeRequestWorkOrders(request.value.id).catch(() => [])
   } catch (e) {
     dropoffError.value = e instanceof Error ? e.message : 'Failed to save drop-off window.'
   } finally {

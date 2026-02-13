@@ -95,6 +95,97 @@
   }
 }
 
+.filters-bar {
+  margin-bottom: $space-4;
+  padding: $space-3 $space-4;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+
+  .filters-row {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: $space-4;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $space-1;
+  }
+
+  .filter-group:not(.filter-group-date) {
+    padding-bottom: calc(1.2em + #{$space-1});
+  }
+
+  .filter-hint {
+    font-size: $font-size-xs;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    line-height: 1.2;
+  }
+
+  .filter-select {
+    padding: $space-2 $space-3;
+    border: 1px solid var(--color-border);
+    border-radius: $radius-md;
+    background: var(--color-surface);
+    color: var(--color-text);
+    min-width: 160px;
+    font-family: inherit;
+    font-size: $font-size-sm;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+    }
+  }
+
+  .filter-date {
+    padding: $space-2 $space-3;
+    border: 1px solid var(--color-border);
+    border-radius: $radius-md;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: $font-size-sm;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+    }
+  }
+
+  .btn-clear-filters {
+    padding: $space-2;
+    margin-left: auto;
+    min-width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: $radius-md;
+    color: var(--color-text);
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: var(--color-background);
+      border-color: var(--color-text-muted);
+      transform: rotate(-90deg);
+    }
+  }
+}
+
 .assets-toolbar {
   display: flex;
   align-items: center;

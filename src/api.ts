@@ -48,12 +48,6 @@ export interface CustomerSummary {
   created_at: string
 }
 
-export interface PendingRequestSummary {
-  id: string
-  to_location: string
-  intended_action: string
-}
-
 export interface AssetSummary {
   id: string
   internal_asset_id: string
@@ -66,8 +60,9 @@ export interface AssetSummary {
   intake_timestamp: string | null
   intake_employee_username?: string | null
   intake_batch_id?: string | null
-  pending_request?: PendingRequestSummary | null
-  pending_request_display?: string | null
+  work_order_id?: string | null
+  work_order_number?: string | null
+  work_order_assigned_to_username?: string | null
   created_at: string
 }
 
@@ -777,9 +772,23 @@ export async function createAsset(data: AssetIntakeData): Promise<AssetSummary> 
   return r.json()
 }
 
-export async function getAssets(params?: { intake_batch?: string }): Promise<AssetSummary[]> {
+export async function getAssets(params?: {
+  intake_batch?: string
+  work_order?: string
+  status?: string
+  location?: string
+  customer_id?: string
+  created_after?: string
+  created_before?: string
+}): Promise<AssetSummary[]> {
   const q = new URLSearchParams()
   if (params?.intake_batch) q.set('intake_batch', params.intake_batch)
+  if (params?.work_order) q.set('work_order', params.work_order)
+  if (params?.status) q.set('status', params.status)
+  if (params?.location) q.set('location', params.location)
+  if (params?.customer_id) q.set('customer_id', params.customer_id)
+  if (params?.created_after) q.set('created_after', params.created_after)
+  if (params?.created_before) q.set('created_before', params.created_before)
   const suffix = q.toString() ? '?' + q.toString() : ''
   const r = await request(`/assets/${suffix}`)
   if (!r.ok) throw new Error('Failed to get assets')
@@ -860,83 +869,24 @@ export const ASSET_LOCATIONS = [
   { value: 'SHIPPED', label: 'Shipped' },
 ] as const
 
-export interface CustodyRequestSummary {
-  id: string
-  asset: string
-  asset_internal_id?: string | null
-  asset_internal_id_display?: string | null
-  from_location: string
-  to_location: string
-  intended_action: string
-  request_timestamp: string
-  status: string
-  requested_by: string | null
-  requested_by_username: string | null
-  completed_by: string | null
-  completed_at: string | null
-  release_destination?: string
-}
-
-export async function getCustodyRequests(params?: { asset_id?: string; status?: string; mine?: boolean }): Promise<CustodyRequestSummary[]> {
-  const q = new URLSearchParams()
-  if (params?.asset_id) q.set('asset_id', params.asset_id)
-  if (params?.status) q.set('status', params.status)
-  if (params?.mine) q.set('mine', '1')
-  const suffix = q.toString() ? '?' + q.toString() : ''
-  const r = await request(`/custody-requests/${suffix}`)
-  if (!r.ok) throw new Error('Failed to get custody requests')
-  return r.json()
-}
-
-export async function cancelCustodyRequest(requestId: string): Promise<{ status: string; request_id: string }> {
-  const r = await request(`/custody-requests/${requestId}/cancel/`, { method: 'POST' })
-  if (!r.ok) throw new Error(await r.text())
-  return r.json()
-}
-
-export interface CreateCustodyRequestPayload {
-  asset_id: string
-  to_location: string
-  intended_action: string
-  sanitization_result?: 'PASS' | 'FAIL'
-  sanitization_method?: string
-  sanitization_tool_used?: string
-  destroy_without_wipe?: boolean
-  release_destination?: string
-}
-
-export async function createCustodyRequest(data: CreateCustodyRequestPayload): Promise<CustodyRequestSummary> {
-  const r = await request('/custody-requests/', { method: 'POST', body: JSON.stringify(data) })
-  if (!r.ok) throw new Error(await r.text())
-  return r.json()
-}
-
-export interface ScanConfirmResponse {
-  status: string
-  asset_id: string
-  new_status: string
-  new_location: string
-  request_id: string
-}
-
-export async function scanConfirm(data: {
+export async function getCustody(params?: {
+  employee_id?: string
+  mine?: boolean
+  work_order_id?: string
   asset_id?: string
   asset_internal_id?: string
-  kiosk_id?: string
-  release_destination?: string
-}): Promise<ScanConfirmResponse> {
-  const r = await request('/custody-requests/scan-confirm/', { method: 'POST', body: JSON.stringify(data) })
-  if (!r.ok) {
-    const text = await r.text()
-    let msg = text
-    try {
-      const j = JSON.parse(text)
-      if (j.detail) msg = j.detail
-    } catch {
-      // use text as-is
-    }
-    throw new Error(msg)
-  }
+  work_order_status?: string
+}): Promise<AssetSummary[]> {
+  const q = new URLSearchParams()
+  if (params?.employee_id) q.set('employee_id', params.employee_id)
+  if (params?.mine) q.set('mine', '1')
+  if (params?.work_order_id) q.set('work_order_id', params.work_order_id)
+  if (params?.asset_id) q.set('asset_id', params.asset_id)
+  if (params?.asset_internal_id) q.set('asset_internal_id', params.asset_internal_id)
+  if (params?.work_order_status) q.set('work_order_status', params.work_order_status)
+  const suffix = q.toString() ? '?' + q.toString() : ''
+  const r = await request(`/custody/${suffix}`)
+  if (!r.ok) throw new Error('Failed to get custody')
   return r.json()
 }
 
@@ -950,6 +900,228 @@ export interface KioskConfig {
 export async function getKioskConfig(kioskId: string): Promise<KioskConfig> {
   const r = await request(`/kiosks/${kioskId}/config/`)
   if (!r.ok) throw new Error('Kiosk not found or inactive')
+  return r.json()
+}
+
+// --- Work Orders ---
+
+export interface WorkOrderSummary {
+  id: string
+  work_order_number: string
+  status: 'CREATED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+  assigned_to: string
+  assigned_to_username: string
+  intended_action: string
+  asset_count: number
+  customer_names: string[]
+  sanitization_passed_count: number
+  sanitization_failed_count: number
+  resale_count: number
+  recycler_count: number
+  other_destination_count: number
+  created_at: string
+  updated_at: string
+  completed_at: string | null
+}
+
+export interface WorkOrderDetail extends WorkOrderSummary {
+  customers: string[]
+  notes: string
+  assets: AssetSummary[]
+  location_summary: Record<string, { label: string; count: number }>
+  sanitization_summary: { passed: number; failed: number }
+  destination_summary: Record<string, number>
+}
+
+export interface WorkOrderAssetSummary extends AssetSummary {
+  confirmed?: boolean
+}
+
+export async function getWorkOrders(params?: {
+  assigned_to?: string
+  status?: string
+}): Promise<WorkOrderSummary[]> {
+  const q = new URLSearchParams()
+  if (params?.assigned_to) q.set('assigned_to', params.assigned_to)
+  if (params?.status) q.set('status', params.status)
+  const suffix = q.toString() ? '?' + q.toString() : ''
+  const r = await request(`/work-orders/${suffix}`)
+  if (!r.ok) throw new Error('Failed to get work orders')
+  return r.json()
+}
+
+export async function getWorkOrder(id: string): Promise<WorkOrderDetail> {
+  const r = await request(`/work-orders/${id}/`)
+  if (!r.ok) throw new Error('Failed to get work order')
+  return r.json()
+}
+
+export async function createWorkOrder(data: {
+  asset_ids: string[]
+  intended_action?: 'MOVE' | 'WIPE' | 'DESTROY' | 'QA'
+  notes?: string
+}): Promise<WorkOrderDetail> {
+  const r = await request('/work-orders/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  if (!r.ok) {
+    const text = await r.text()
+    let msg = text
+    try {
+      const j = JSON.parse(text)
+      if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)
+    } catch {
+      // use text
+    }
+    throw new Error(msg)
+  }
+  return r.json()
+}
+
+export async function updateWorkOrder(
+  id: string,
+  data: { status?: string; notes?: string }
+): Promise<WorkOrderDetail> {
+  const r = await request(`/work-orders/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+  if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+
+export async function addAssetsToWorkOrder(id: string, assetIds: string[]): Promise<WorkOrderDetail> {
+  const r = await request(`/work-orders/${id}/add-assets/`, {
+    method: 'POST',
+    body: JSON.stringify({ asset_ids: assetIds }),
+  })
+  if (!r.ok) {
+    const text = await r.text()
+    let msg = text
+    try {
+      const j = JSON.parse(text)
+      if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)
+    } catch {
+      // use text
+    }
+    throw new Error(msg)
+  }
+  return r.json()
+}
+
+export async function removeAssetFromWorkOrder(id: string, assetId: string): Promise<WorkOrderDetail> {
+  const r = await request(`/work-orders/${id}/remove-asset/`, {
+    method: 'POST',
+    body: JSON.stringify({ asset_id: assetId }),
+  })
+  if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+
+export async function cancelWorkOrder(id: string): Promise<WorkOrderDetail> {
+  const r = await request(`/work-orders/${id}/cancel/`, { method: 'POST' })
+  if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+
+export async function claimWorkOrder(id: string): Promise<WorkOrderDetail> {
+  const r = await request(`/work-orders/${id}/claim/`, { method: 'POST' })
+  if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+
+export async function getWorkOrderByAsset(params: {
+  asset_id?: string
+  asset_internal_id?: string
+  work_order_id?: string
+  work_order_number?: string
+}): Promise<WorkOrderDetail> {
+  const q = new URLSearchParams()
+  if (params.asset_id) q.set('asset_id', params.asset_id)
+  if (params.asset_internal_id) q.set('asset_internal_id', params.asset_internal_id)
+  if (params.work_order_id) q.set('work_order_id', params.work_order_id)
+  if (params.work_order_number) q.set('work_order_number', params.work_order_number)
+  const suffix = q.toString() ? '?' + q.toString() : ''
+  const r = await request(`/work-orders/by-asset/${suffix}`)
+  if (!r.ok) {
+    const text = await r.text()
+    let msg = text
+    try {
+      const j = JSON.parse(text)
+      if (j.detail) msg = j.detail
+    } catch {
+      // use text
+    }
+    throw new Error(msg)
+  }
+  return r.json()
+}
+
+export interface WorkOrderConfirmResponse {
+  status: string
+  work_order_id: string
+  processed: Array<{
+    asset_id: string
+    internal_asset_id: string
+    new_status: string
+    new_location: string
+  }>
+  errors: string[]
+  work_order_status: string
+}
+
+export async function confirmWorkOrder(data: {
+  work_order_id: string
+  confirmed_asset_ids: string[]
+  kiosk_id?: string
+  release_destination?: string
+}): Promise<WorkOrderConfirmResponse> {
+  const r = await request('/custody-requests/work-order-confirm/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  if (!r.ok) {
+    const text = await r.text()
+    let msg = text
+    try {
+      const j = JSON.parse(text)
+      if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)
+    } catch {
+      // use text
+    }
+    throw new Error(msg)
+  }
+  return r.json()
+}
+
+export interface ScanConfirmWorkOrderResponse {
+  work_order: WorkOrderDetail
+  action: 'confirm_work_order'
+}
+
+export async function scanConfirmWorkOrder(data: {
+  asset_id?: string
+  asset_internal_id?: string
+  work_order_id?: string
+  work_order_number?: string
+  kiosk_id?: string
+}): Promise<ScanConfirmWorkOrderResponse> {
+  const r = await request('/custody-requests/scan-confirm/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  if (!r.ok) {
+    const text = await r.text()
+    let msg = text
+    try {
+      const j = JSON.parse(text)
+      if (j.detail) msg = j.detail
+    } catch {
+      // use text
+    }
+    throw new Error(msg)
+  }
   return r.json()
 }
 
@@ -972,14 +1144,20 @@ export const AUDIT_EVENT_TYPE_DISPLAY: Record<string, string> = {
   INTAKE_REQUEST_CREATED: 'Request submitted',
   INTAKE_REQUEST_UPDATED: 'Request updated',
   ASSET_INTAKE: 'Asset received',
-  CUSTODY_REQUEST_CREATED: 'Custody request created',
   CUSTODY_TRANSFER: 'Custody transfer',
-  CUSTODY_REQUEST_CANCELLED: 'Custody request cancelled',
   SANITIZATION_RECORD: 'Sanitization recorded',
   RELEASE_RECORDED: 'Release recorded',
   DESTRUCTION_CONFIRMED: 'Destruction confirmed',
   CUSTOMER_CREATED: 'Customer created',
   CUSTOMER_UPDATED: 'Customer updated',
+  WORK_ORDER_CREATED: 'Work order created',
+  WORK_ORDER_ASSIGNED: 'Work order assigned',
+  WORK_ORDER_ASSET_ADDED: 'Asset added to work order',
+  WORK_ORDER_ASSET_REMOVED: 'Asset removed from work order',
+  WORK_ORDER_STATUS_CHANGED: 'Work order status changed',
+  WORK_ORDER_COMPLETED: 'Work order completed',
+  WORK_ORDER_CANCELLED: 'Work order cancelled',
+  WORK_ORDER_CONFIRMED: 'Work order confirmed',
   UNKNOWN: 'System event',
 }
 
@@ -1215,6 +1393,12 @@ export interface IntakeRequestAssetSummary {
 export async function getIntakeRequestAssets(requestId: string): Promise<IntakeRequestAssetSummary[]> {
   const r = await request(`/intake-requests/${requestId}/assets/`)
   if (!r.ok) throw new Error('Failed to get request assets')
+  return r.json()
+}
+
+export async function getIntakeRequestWorkOrders(requestId: string): Promise<WorkOrderSummary[]> {
+  const r = await request(`/intake-requests/${requestId}/work-orders/`)
+  if (!r.ok) throw new Error('Failed to get request work orders')
   return r.json()
 }
 
