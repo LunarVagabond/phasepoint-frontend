@@ -12,7 +12,7 @@
       />
       <p v-if="!workOrdersLoading && openWorkOrders.length === 0" class="modal-muted">No open work orders.</p>
     </section>
-    <section class="dashboard-section">
+    <section v-if="showEmployees" class="dashboard-section">
       <div class="section-head">
         <h2 class="section-title">Employees</h2>
         <button type="button" class="btn-add-in-header" @click="showAddEmployeeModal = true">
@@ -45,16 +45,6 @@
         </template>
       </DataTable>
     </section>
-    <section class="dashboard-section">
-      <h2 class="section-title">Customer Users</h2>
-      <DataTable
-        :columns="customerUserColumns"
-        :data="customerUsersTableData"
-        :loading="loading"
-        row-key="id"
-      />
-    </section>
-
     <section v-if="showIntakeRequests" class="dashboard-section">
       <h2 class="section-title">Intake requests</h2>
       <p class="section-desc">Review and process incoming requests. Visible to Operations and Customer Relations.</p>
@@ -89,7 +79,7 @@
       <p v-if="!intakeLoading && intakeRequests.length === 0" class="modal-muted">No intake requests.</p>
     </section>
 
-    <section class="dashboard-section">
+    <section v-if="showCustomers" class="dashboard-section">
       <div class="section-head">
         <h2 class="section-title">Customers</h2>
         <button type="button" class="btn-add-in-header" @click="showAddCustomerModal = true">
@@ -102,7 +92,7 @@
         :data="customersTableData"
         :loading="customersLoading"
         row-key="id"
-        :row-click="openCustomerModal"
+        :row-click="openCustomerDetail"
       />
     </section>
 
@@ -228,56 +218,6 @@
             </div>
           </div>
         </template>
-      </div>
-    </div>
-
-    <div v-if="selectedCustomer" class="modal-backdrop" @click.self="closeCustomerModal">
-      <div class="modal modal-wide customer-detail-modal" @click.stop>
-        <h3>Customer</h3>
-        <table class="detail-table">
-          <tbody>
-            <tr>
-              <th scope="row">Company</th>
-              <td>{{ selectedCustomer.name }}</td>
-            </tr>
-            <tr>
-              <th scope="row">Email</th>
-              <td>{{ selectedCustomer.email || '—' }}</td>
-            </tr>
-            <tr>
-              <th scope="row">Phone</th>
-              <td>{{ selectedCustomer.phone || '—' }}</td>
-            </tr>
-            <tr>
-              <th scope="row">Address</th>
-              <td class="detail-notes">{{ formatCustomerAddress(selectedCustomer) }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="modal-form">
-          <div class="form-row">
-            <label class="field-label" for="customer-notes">Internal notes</label>
-            <textarea
-              id="customer-notes"
-              v-model="editCustomerNotes"
-              class="text-input textarea-input"
-              placeholder="Internal notes…"
-              rows="4"
-            />
-          </div>
-        </div>
-        <p v-if="customerSaveError" class="modal-error">{{ customerSaveError }}</p>
-        <div class="modal-actions">
-          <router-link
-            v-if="selectedCustomer && canViewCustomerContext"
-            class="btn-secondary"
-            :to="`/employee-portal/customers/${selectedCustomer.id}/portal`"
-          >
-            Open customer portal (read-only)
-          </router-link>
-          <button type="button" class="btn-secondary" @click="closeCustomerModal">Close</button>
-          <button type="button" class="btn-primary" :disabled="savingCustomer" @click="saveCustomerNotes">Save notes</button>
-        </div>
       </div>
     </div>
 
@@ -506,10 +446,13 @@
 <script setup lang="ts">
 // TODO: consider extracting AddEmployeeModal, AddCustomerModal, EditEmployeeModal into reusable components
 import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { getUsersByType, getGroups, createUser, updateUser, deleteUser, getMe, getCustomers, createCustomer, updateCustomer, canSeeIntakeRequests, getIntakeRequests, updateIntakeRequest, searchUsAddresses, getWorkOrders } from '../api'
 import DataTable from '../components/DataTable.vue'
 import type { UserSummary, CustomerSummary, IntakeRequestSummary, MeResponse, WorkOrderSummary } from '../api'
 import type { DataTableColumn } from '../components/DataTable.vue'
+
+const router = useRouter()
 
 const employeeColumns: DataTableColumn[] = [
   { key: 'username', label: 'Username', type: 'strong' },
@@ -526,11 +469,6 @@ const customerColumns: DataTableColumn[] = [
   { key: 'phone', label: 'Phone' },
   { key: 'address_display', label: 'Address' },
   { key: 'notes_short', label: 'Internal notes' },
-]
-const customerUserColumns: DataTableColumn[] = [
-  { key: 'username', label: 'Username', type: 'strong' },
-  { key: 'email', label: 'Email' },
-  { key: 'customer_name', label: 'Company' },
 ]
 
 const workOrdersColumns: DataTableColumn[] = [
@@ -549,7 +487,6 @@ const intakeColumns: DataTableColumn[] = [
 ]
 
 const employeeUsers = ref<UserSummary[]>([])
-const customerUsers = ref<UserSummary[]>([])
 const groups = ref<Awaited<ReturnType<typeof getGroups>>>([])
 const me = ref<MeResponse | null>(null)
 const meId = computed(() => me.value?.id ?? null)
@@ -560,6 +497,19 @@ const canViewCustomerContext = computed(() => {
   const groups = (me.value.groups_display || []).map((g) => g.toLowerCase())
   return groups.includes('customer_relations')
 })
+
+const showEmployees = computed(() => {
+  if (!me.value) return false
+  const groups = (me.value.groups_display || []).map((g) => g.toLowerCase())
+  return groups.includes('manager')
+})
+
+const showCustomers = computed(() => {
+  if (!me.value) return false
+  if (me.value.is_staff) return true
+  const groups = (me.value.groups_display || []).map((g) => g.toLowerCase())
+  return groups.includes('customer_relations') || groups.includes('manager')
+})
 const loading = ref(true)
 const tableData = computed(() =>
   employeeUsers.value.map((u) => ({
@@ -568,12 +518,6 @@ const tableData = computed(() =>
     active_display: u.is_active ? 'Yes' : 'No',
     staff_display: u.is_staff ? 'Yes' : 'No',
     groups_str: u.groups_display.length ? u.groups_display.join(', ') : '—',
-  }))
-)
-const customerUsersTableData = computed(() =>
-  customerUsers.value.map((u) => ({
-    ...u,
-    active_display: u.is_active ? 'Yes' : 'No',
   }))
 )
 
@@ -604,10 +548,6 @@ const customerAddressSearching = ref(false)
 let customerAddressSearchTimer: ReturnType<typeof setTimeout> | null = null
 const addingCustomer = ref(false)
 const customerError = ref('')
-const selectedCustomer = ref<CustomerSummary | null>(null)
-const editCustomerNotes = ref('')
-const savingCustomer = ref(false)
-const customerSaveError = ref('')
 
 const confirmDialog = ref<{
   show: boolean
@@ -707,14 +647,12 @@ const saving = ref(false)
 
 async function load() {
   try {
-    const [employeeList, customerList, groupList, meRes] = await Promise.all([
+    const [employeeList, groupList, meRes] = await Promise.all([
       getUsersByType('EMPLOYEE'),
-      getUsersByType('CUSTOMER'),
       getGroups(),
       getMe(),
     ])
     employeeUsers.value = employeeList
-    customerUsers.value = customerList
     groups.value = groupList
     me.value = meRes
   } finally {
@@ -1035,33 +973,10 @@ function closeAddCustomerModal() {
   customerError.value = ''
 }
 
-function openCustomerModal(row: Record<string, unknown>) {
+function openCustomerDetail(row: Record<string, unknown>) {
   const id = row.id as string
   if (!id) return
-  const c = customers.value.find((x) => x.id === id) ?? null
-  selectedCustomer.value = c
-  editCustomerNotes.value = c?.notes ?? ''
-  customerSaveError.value = ''
-}
-
-function closeCustomerModal() {
-  selectedCustomer.value = null
-  customerSaveError.value = ''
-}
-
-async function saveCustomerNotes() {
-  if (!selectedCustomer.value) return
-  customerSaveError.value = ''
-  savingCustomer.value = true
-  try {
-    const updated = await updateCustomer(selectedCustomer.value.id, { notes: editCustomerNotes.value })
-    selectedCustomer.value = updated
-    await loadCustomers()
-  } catch (e) {
-    customerSaveError.value = e instanceof Error ? e.message : 'Failed to save notes.'
-  } finally {
-    savingCustomer.value = false
-  }
+  router.push(`/employee-portal/customers/${id}`)
 }
 
 function closeConfirm() {

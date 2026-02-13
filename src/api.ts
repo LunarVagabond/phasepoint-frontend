@@ -45,6 +45,12 @@ export interface CustomerSummary {
   country?: string
   postal_code?: string
   notes: string
+  representative?: string | null
+  representative_id?: string | null
+  representative_username?: string | null
+  representative_email?: string | null
+  representative_first_name?: string | null
+  representative_last_name?: string | null
   created_at: string
 }
 
@@ -104,6 +110,7 @@ export async function updateCustomer(
     country?: string
     postal_code?: string
     notes?: string
+    representative?: string | null
   }
 ): Promise<CustomerSummary> {
   const r = await request(`/customers/${id}/`, { method: 'PATCH', body: JSON.stringify(data) })

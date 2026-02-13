@@ -36,15 +36,17 @@
             />
           </td>
           <td v-for="col in columns" :key="col.key">
-            <template v-if="col.type === 'strong'">
-              <strong>{{ formatCell(row[col.key]) }}</strong>
-            </template>
-            <template v-else-if="col.type === 'badge'">
-              <span class="badge">{{ formatCell(row[col.key]) }}</span>
-            </template>
-            <template v-else>
-              {{ formatCell(row[col.key]) }}
-            </template>
+            <slot :name="`cell-${col.key}`" :row="row" :value="row[col.key]">
+              <template v-if="col.type === 'strong'">
+                <strong>{{ formatCell(row[col.key]) }}</strong>
+              </template>
+              <template v-else-if="col.type === 'badge'">
+                <span class="badge">{{ formatCell(row[col.key]) }}</span>
+              </template>
+              <template v-else>
+                {{ formatCell(row[col.key]) }}
+              </template>
+            </slot>
           </td>
           <td v-if="$slots['row-actions']" class="actions-cell">
             <slot name="row-actions" :row="row" />

@@ -24,6 +24,7 @@ const routes = [
       { path: 'audit', name: 'Audit', component: () => import('../views/AuditTrailView.vue'), meta: { title: 'Audit trail' } },
       { path: 'reports', name: 'Reports', component: () => import('../views/ReportsView.vue'), meta: { title: 'Reports' } },
       { path: 'customers/:customerId/context', name: 'CustomerContextInternal', component: () => import('../views/CustomerContextInternalView.vue'), meta: { title: 'Customer Context' } },
+      { path: 'customers/:customerId', name: 'CustomerDetail', component: () => import('../views/CustomerDetailView.vue'), meta: { title: 'Customer Detail' } },
       {
         path: 'customers/:customerId/portal',
         component: () => import('../views/CustomerPortalLayout.vue'),

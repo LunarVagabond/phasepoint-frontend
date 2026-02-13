@@ -71,34 +71,38 @@
         </div>
       </article>
 
-      <article class="card">
+      <article class="card history-card">
         <h3>History</h3>
-        <p v-if="history.length === 0 && workOrders.length === 0" class="empty-history">No history events recorded yet.</p>
-        <ol v-else class="timeline">
-          <li v-for="ev in history" :key="ev.timestamp + ev.event_type" class="timeline-item">
-            <div class="timeline-meta">
-              <span class="time">{{ formatDate(ev.timestamp) }}</span>
-              <span class="event-type">{{ getEventTypeDisplay(ev.event_type) }}</span>
-              <span v-if="ev.user" class="user">by {{ ev.user }}</span>
-            </div>
-            <ul class="payload-readable">
-              <li v-for="(line, i) in formatEventDetailReadable(ev)" :key="i">{{ line }}</li>
-            </ul>
-          </li>
-          <li v-for="wo in workOrders" :key="wo.id" class="timeline-item">
-            <div class="timeline-meta">
-              <span class="time">{{ formatDate(wo.created_at) }}</span>
-              <span class="event-type">Work Order Created</span>
-              <span v-if="wo.assigned_to_username" class="user">assigned to {{ wo.assigned_to_username }}</span>
-            </div>
-            <ul class="payload-readable">
-              <li>Work Order: {{ wo.work_order_number }}</li>
-              <li>Status: {{ wo.status }}</li>
-              <li>Assets: {{ wo.asset_count }}</li>
-              <li v-if="wo.completed_at">Completed: {{ formatDate(wo.completed_at) }}</li>
-            </ul>
+        <div class="history-content">
+          <p v-if="sortedHistory.length === 0" class="empty-history">No history events recorded yet.</p>
+          <ol v-else class="timeline">
+          <li v-for="item in sortedHistory" :key="item.type === 'history' ? (item.data.timestamp + (item.data as typeof history.value[0]).event_type) : (item.data as WorkOrderSummary).id" class="timeline-item">
+            <template v-if="item.type === 'history'">
+              <div class="timeline-meta">
+                <span class="time">{{ formatDate(item.timestamp) }}</span>
+                <span class="event-type">{{ getEventTypeDisplay((item.data as typeof history.value[0]).event_type) }}</span>
+                <span v-if="(item.data as typeof history.value[0]).user" class="user">by {{ (item.data as typeof history.value[0]).user }}</span>
+              </div>
+              <ul class="payload-readable">
+                <li v-for="(line, i) in formatEventDetailReadable(item.data as typeof history.value[0])" :key="i">{{ line }}</li>
+              </ul>
+            </template>
+            <template v-else>
+              <div class="timeline-meta">
+                <span class="time">{{ formatDate(item.timestamp) }}</span>
+                <span class="event-type">Work Order Created</span>
+                <span v-if="(item.data as WorkOrderSummary).assigned_to_username" class="user">assigned to {{ (item.data as WorkOrderSummary).assigned_to_username }}</span>
+              </div>
+              <ul class="payload-readable">
+                <li>Work Order: {{ (item.data as WorkOrderSummary).work_order_number }}</li>
+                <li>Status: {{ (item.data as WorkOrderSummary).status }}</li>
+                <li>Assets: {{ (item.data as WorkOrderSummary).asset_count }}</li>
+                <li v-if="(item.data as WorkOrderSummary).completed_at">Completed: {{ formatDate((item.data as WorkOrderSummary).completed_at!) }}</li>
+              </ul>
+            </template>
           </li>
         </ol>
+        </div>
       </article>
 
       <article class="card assets-card">
@@ -200,6 +204,32 @@ const selectedAsset = ref<IntakeRequestAssetSummary | null>(null)
 const workOrders = ref<WorkOrderSummary[]>([])
 
 const canEditDropoff = computed(() => !route.meta.customerPortalReadonly)
+
+// Combine history and work orders, sorted by most recent first
+const sortedHistory = computed(() => {
+  const items: Array<{
+    timestamp: string
+    type: 'history' | 'workorder'
+    data: typeof history.value[0] | WorkOrderSummary
+  }> = []
+  
+  // Add history events
+  history.value.forEach(ev => {
+    items.push({ timestamp: ev.timestamp, type: 'history', data: ev })
+  })
+  
+  // Add work orders
+  workOrders.value.forEach(wo => {
+    items.push({ timestamp: wo.created_at, type: 'workorder', data: wo })
+  })
+  
+  // Sort by timestamp descending (most recent first)
+  return items.sort((a, b) => {
+    const dateA = new Date(a.timestamp).getTime()
+    const dateB = new Date(b.timestamp).getTime()
+    return dateB - dateA
+  })
+})
 
 function formatDate(iso: string) {
   try {
@@ -476,6 +506,18 @@ onMounted(() => {
 .empty-history {
   margin: 0;
   color: var(--color-text-muted);
+}
+
+.history-card {
+  display: flex;
+  flex-direction: column;
+  max-height: 600px;
+}
+
+.history-content {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .dropoff-editor {
