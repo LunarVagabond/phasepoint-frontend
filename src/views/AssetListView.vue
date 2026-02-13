@@ -219,6 +219,15 @@
               <span class="detail-label">Intake by</span>
               <span class="detail-value">{{ detailAsset.intake_employee_username || '—' }}</span>
             </div>
+            <div class="detail-item">
+              <span class="detail-label">Shipment</span>
+              <span class="detail-value">
+                <template v-if="detailAsset.shipment_id">
+                  <router-link :to="`/employee-portal/shipments/${detailAsset.shipment_id}`">View shipment</router-link>
+                </template>
+                <template v-else>—</template>
+              </span>
+            </div>
           </div>
 
           <section v-if="detailAsset.location === 'WIPE_STATION'" class="detail-section">

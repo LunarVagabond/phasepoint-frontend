@@ -106,6 +106,71 @@
         </div>
       </section>
 
+      <section class="shipments-section">
+        <h2>Shipments ({{ (workOrder.shipments || []).length }})</h2>
+        <div v-if="(workOrder.shipments || []).length" class="shipments-table-container">
+          <table class="detail-table shipments-table">
+            <thead>
+              <tr>
+                <th>Carrier</th>
+                <th>Tracking</th>
+                <th>Shipped</th>
+                <th>Destination</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="s in (workOrder.shipments || [])"
+                :key="s.id"
+                class="shipment-row-clickable"
+                role="button"
+                tabindex="0"
+                @click="goToShipment(s.id)"
+                @keydown.enter.space.prevent="goToShipment(s.id)"
+              >
+                <td>{{ s.carrier || '—' }}</td>
+                <td>{{ s.tracking_number || '—' }}</td>
+                <td>{{ formatDate(s.shipped_at) }}</td>
+                <td>{{ s.destination_type || '—' }}</td>
+                <td class="detail-notes">{{ s.notes || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div v-if="workOrder.status !== 'COMPLETED' && workOrder.status !== 'CANCELLED'" class="shipment-add-form">
+          <h3 class="shipment-add-title">Add shipment</h3>
+          <div class="shipment-form-row">
+            <label for="shipment-carrier">Carrier</label>
+            <input id="shipment-carrier" v-model="newShipment.carrier" type="text" class="text-input" placeholder="e.g. FedEx" />
+          </div>
+          <div class="shipment-form-row">
+            <label for="shipment-tracking">Tracking number</label>
+            <input id="shipment-tracking" v-model="newShipment.tracking_number" type="text" class="text-input" placeholder="Tracking #" />
+          </div>
+          <div class="shipment-form-row">
+            <label for="shipment-destination">Destination type</label>
+            <select id="shipment-destination" v-model="newShipment.destination_type" class="text-input">
+              <option value="">—</option>
+              <option v-for="d in SHIPMENT_DESTINATION_TYPES" :key="d" :value="d">{{ d }}</option>
+            </select>
+          </div>
+          <div class="shipment-form-row">
+            <label for="shipment-notes">Notes</label>
+            <textarea id="shipment-notes" v-model="newShipment.notes" class="text-input" rows="2" placeholder="Optional" />
+          </div>
+          <button
+            type="button"
+            class="btn-primary"
+            :disabled="shipmentSubmitting"
+            @click="submitShipment"
+          >
+            {{ shipmentSubmitting ? 'Adding…' : 'Add shipment' }}
+          </button>
+          <p v-if="shipmentError" class="error">{{ shipmentError }}</p>
+        </div>
+      </section>
+
       <section class="assets-section">
         <h2>Assets ({{ workOrder.assets.length }})</h2>
         <div class="assets-table-container">
@@ -171,10 +236,11 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { getWorkOrder, recordWorkOrderSanitization, updateWorkOrder, getMe, type WorkOrderDetail, type AssetSummary } from '../api'
+import { useRoute, useRouter } from 'vue-router'
+import { getWorkOrder, recordWorkOrderSanitization, updateWorkOrder, getMe, createShipment, SHIPMENT_DESTINATION_TYPES, type WorkOrderDetail, type AssetSummary } from '../api'
 
 const route = useRoute()
+const router = useRouter()
 const me = ref<Awaited<ReturnType<typeof getMe>> | null>(null)
 const workOrder = ref<WorkOrderDetail | null>(null)
 const loading = ref(true)
@@ -186,6 +252,9 @@ const sanitizationSuccess = ref('')
 const sanitizationData = ref<Record<string, {
   sanitization_result: 'PASS' | 'FAIL' | ''
 }>>({})
+const newShipment = ref({ carrier: '', tracking_number: '', destination_type: '', notes: '' })
+const shipmentSubmitting = ref(false)
+const shipmentError = ref('')
 
 const ASSET_LOCATIONS = [
   { value: 'INTAKE', label: 'Intake' },
@@ -247,6 +316,10 @@ function formatDate(iso: string) {
   }
 }
 
+function goToShipment(shipmentId: string) {
+  router.push(`/employee-portal/shipments/${shipmentId}`)
+}
+
 function initializeSanitizationData() {
   if (!workOrder.value) return
   const data: Record<string, {
@@ -306,6 +379,26 @@ async function submitSanitization() {
     sanitizationError.value = e instanceof Error ? e.message : 'Failed to record sanitization'
   } finally {
     submitting.value = false
+  }
+}
+
+async function submitShipment() {
+  if (!workOrder.value) return
+  shipmentSubmitting.value = true
+  shipmentError.value = ''
+  try {
+    await createShipment(workOrder.value.id, {
+      carrier: newShipment.value.carrier.trim() || undefined,
+      tracking_number: newShipment.value.tracking_number.trim() || undefined,
+      destination_type: newShipment.value.destination_type.trim() || undefined,
+      notes: newShipment.value.notes.trim() || undefined,
+    })
+    newShipment.value = { carrier: '', tracking_number: '', destination_type: '', notes: '' }
+    await loadWorkOrder()
+  } catch (e) {
+    shipmentError.value = e instanceof Error ? e.message : 'Failed to add shipment'
+  } finally {
+    shipmentSubmitting.value = false
   }
 }
 
@@ -392,4 +485,15 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 @use '../styles/variables' as *;
+
+.shipment-row-clickable {
+  cursor: pointer;
+}
+.shipment-row-clickable:hover {
+  background: var(--color-bg-subtle, rgba(0 0 0 / 0.03));
+}
+.shipment-row-clickable:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
 </style>

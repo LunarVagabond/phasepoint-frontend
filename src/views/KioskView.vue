@@ -128,6 +128,29 @@
             </div>
           </div>
 
+          <div v-if="showReleaseDestination" class="kiosk-shipment-optional">
+            <h3>Shipment (optional)</h3>
+            <input
+              v-model="shipmentCarrier"
+              type="text"
+              class="kiosk-input"
+              placeholder="Carrier"
+              maxlength="255"
+            />
+            <input
+              v-model="shipmentTrackingNumber"
+              type="text"
+              class="kiosk-input"
+              placeholder="Tracking number"
+              maxlength="255"
+            />
+            <select v-model="shipmentDestinationType" class="kiosk-select kiosk-select-small">
+              <option value="">— Destination type —</option>
+              <option value="Re-sale">Re-sale</option>
+              <option value="Recycler">Recycler</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
           <div class="kiosk-actions">
             <button type="button" class="kiosk-submit kiosk-submit-secondary" @click="resetWorkOrder">
               Back / Load Another
@@ -160,6 +183,7 @@
 import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
 import {
   getKioskConfig,
+  kioskRegister,
   scanConfirmWorkOrder,
   confirmWorkOrder as confirmWorkOrderApi,
   kioskBadgeLogin,
@@ -193,6 +217,9 @@ const confirmedAssetIds = ref<Set<string>>(new Set())
 const assetDestinations = ref<Record<string, string>>({})
 const assetDestinationOther = ref<Record<string, string>>({})  // required when destination is "Other"
 const releaseDestination = ref('')
+const shipmentCarrier = ref('')
+const shipmentTrackingNumber = ref('')
+const shipmentDestinationType = ref('')
 const confirming = ref(false)
 const confirmError = ref('')
 const confirmSuccess = ref('')
@@ -328,6 +355,9 @@ function resetWorkOrder() {
   assetDestinations.value = {}
   assetDestinationOther.value = {}
   releaseDestination.value = ''
+  shipmentCarrier.value = ''
+  shipmentTrackingNumber.value = ''
+  shipmentDestinationType.value = ''
   confirmError.value = ''
   confirmSuccess.value = ''
   scanInput.value = ''
@@ -356,8 +386,10 @@ async function confirmWorkOrderBatch() {
       confirmed_asset_ids: Array.from(confirmedAssetIds.value),
       kiosk_id: kioskId,
       asset_destinations: assetDestinationsArray,
-      // Keep release_destination for backward compatibility if not using per-asset destinations
       release_destination: !showReleaseDestination.value ? releaseDestination.value || undefined : undefined,
+      carrier: shipmentCarrier.value?.trim() || undefined,
+      tracking_number: shipmentTrackingNumber.value?.trim() || undefined,
+      destination_type: shipmentDestinationType.value?.trim() || undefined,
     })
     
     if (result.errors && result.errors.length > 0) {
@@ -378,6 +410,9 @@ async function confirmWorkOrderBatch() {
         assetDestinations.value = {}
         assetDestinationOther.value = {}
         releaseDestination.value = ''
+        shipmentCarrier.value = ''
+        shipmentTrackingNumber.value = ''
+        shipmentDestinationType.value = ''
       } catch {
         // If reload fails, reset
         resetWorkOrder()
@@ -396,10 +431,16 @@ onMounted(async () => {
     error.value = 'No kiosk ID configured.'
     return
   }
+  const kioskSecret = import.meta.env.VITE_KIOSK_SECRET
+  if (!kioskSecret) {
+    error.value = 'No kiosk secret configured (VITE_KIOSK_SECRET).'
+    return
+  }
   try {
-    config.value = await getKioskConfig(kioskId)
+    config.value = await kioskRegister(kioskId, kioskSecret)
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Failed to load kiosk.'
+    error.value = e instanceof Error ? e.message : 'Failed to register kiosk.'
+    return
   }
   try {
     const data = await getMe()

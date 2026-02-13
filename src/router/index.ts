@@ -22,6 +22,8 @@ const routes = [
       { path: 'assets', name: 'Assets', component: () => import('../views/AssetListView.vue'), meta: { title: 'Assets' } },
       { path: 'work-orders', name: 'OperationsWorkOrders', component: () => import('../views/OperationsWorkOrdersView.vue'), meta: { title: 'Work Orders' } },
       { path: 'work-orders/:id', name: 'WorkOrderDetail', component: () => import('../views/WorkOrderDetailView.vue'), meta: { title: 'Work Order' } },
+      { path: 'shipments', name: 'ShipmentsList', component: () => import('../views/ShipmentsListView.vue'), meta: { title: 'Shipments' } },
+      { path: 'shipments/:id', name: 'ShipmentDetail', component: () => import('../views/ShipmentDetailView.vue'), meta: { title: 'Shipment' } },
       { path: 'batches', name: 'Batches', component: () => import('../views/BatchesListView.vue'), meta: { title: 'Batches' } },
       { path: 'audit', name: 'Audit', component: () => import('../views/AuditTrailView.vue'), meta: { title: 'Audit trail' } },
       { path: 'reports', name: 'Reports', component: () => import('../views/ReportsView.vue'), meta: { title: 'Reports' } },
@@ -104,14 +106,15 @@ router.beforeEach(async (to) => {
     me = await getMe()
   } catch {
     if (to.meta.requiresAuth || to.meta.requiresPolicyAccept) {
-      return { name: 'Login', query: { redirect: to.fullPath } }
+      return { name: 'Login', query: { redirect: to.path } }
     }
     return true
   }
   if (to.name === 'Login') {
     if (me.user_type === 'CUSTOMER') return '/customer-portal'
-    const redirect = (to.query.redirect as string) || '/employee-portal'
-    return typeof redirect === 'string' && redirect.startsWith('/') ? redirect : '/employee-portal'
+    const raw = (to.query.redirect as string) || '/employee-portal'
+    const redirect = typeof raw === 'string' ? raw.split('?')[0].trim() || '/employee-portal' : '/employee-portal'
+    return redirect.startsWith('/') ? redirect : '/employee-portal'
   }
   if (to.meta.employeeOnly && me.user_type !== 'EMPLOYEE') return '/customer-portal'
   if (to.path.startsWith('/employee-portal') && me.user_type !== 'EMPLOYEE') return '/customer-portal'
@@ -122,7 +125,8 @@ router.beforeEach(async (to) => {
   const acknowledgedHash = me.acknowledged_bundle_hash
   const needsPolicyAccept = !acknowledgedHash || currentHash !== acknowledgedHash
   if (isEmployeeRoute && isEmployeeUser && to.meta.requiresAuth && needsPolicyAccept) {
-    return { name: 'Policies', query: { redirect: to.fullPath } }
+    if (to.name === 'Policies') return true
+    return { name: 'Policies', query: { redirect: to.path } }
   }
   if (to.meta.requiresPolicyEditor) {
     const { canEditPolicies } = await import('../api')

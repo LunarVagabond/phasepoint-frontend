@@ -69,6 +69,7 @@ export interface AssetSummary {
   work_order_id?: string | null
   work_order_number?: string | null
   work_order_assigned_to_username?: string | null
+  shipment_id?: string | null
   created_at: string
 }
 
@@ -787,6 +788,8 @@ export async function getAssets(params?: {
   customer_id?: string
   created_after?: string
   created_before?: string
+  /** When true, only return assets not assigned to any shipment. */
+  not_in_shipment?: boolean
 }): Promise<AssetSummary[]> {
   const q = new URLSearchParams()
   if (params?.intake_batch) q.set('intake_batch', params.intake_batch)
@@ -796,6 +799,7 @@ export async function getAssets(params?: {
   if (params?.customer_id) q.set('customer_id', params.customer_id)
   if (params?.created_after) q.set('created_after', params.created_after)
   if (params?.created_before) q.set('created_before', params.created_before)
+  if (params?.not_in_shipment) q.set('not_in_shipment', '1')
   const suffix = q.toString() ? '?' + q.toString() : ''
   const r = await request(`/assets/${suffix}`)
   if (!r.ok) throw new Error('Failed to get assets')
@@ -910,6 +914,19 @@ export async function getKioskConfig(kioskId: string): Promise<KioskConfig> {
   return r.json()
 }
 
+export async function kioskRegister(kioskId: string, secret: string): Promise<KioskConfig> {
+  const r = await request('/kiosks/register/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kiosk_id: kioskId, secret }),
+  })
+  if (!r.ok) {
+    const data = await r.json().catch(() => ({}))
+    throw new Error(data.detail || 'Kiosk registration failed')
+  }
+  return r.json()
+}
+
 // --- Work Orders ---
 
 export interface WorkOrderSummary {
@@ -931,17 +948,51 @@ export interface WorkOrderSummary {
   completed_at: string | null
 }
 
+export interface ShipmentSummary {
+  id: string
+  work_order: string | null
+  carrier: string
+  tracking_number: string
+  shipped_at: string
+  destination_type: string
+  notes: string
+}
+
+export interface ShipmentListSummary extends ShipmentSummary {
+  work_order_number?: string
+  asset_count: number
+}
+
+export interface ShipmentDetail extends ShipmentSummary {
+  work_order_number?: string
+  assets: Array<{
+    id: string
+    internal_asset_id: string
+    manufacturer_model?: string
+    serial_number?: string
+    status: string
+    location: string
+    customer_name?: string
+    work_order_number?: string
+  }>
+}
+
 export interface WorkOrderDetail extends WorkOrderSummary {
   customers: string[]
   notes: string
   assets: Array<AssetSummary & {
     latest_sanitization_record_id?: string | null
     latest_sanitization_result?: 'PASS' | 'FAIL' | null
+    /** If set, asset is already on a shipment; must be removed from that shipment before adding to another. */
+    shipment_id?: string | null
   }>
   location_summary: Record<string, { label: string; count: number }>
   sanitization_summary: { passed: number; failed: number }
   destination_summary: Record<string, number>
+  shipments?: ShipmentSummary[]
 }
+
+export const SHIPMENT_DESTINATION_TYPES = ['Re-sale', 'Recycler', 'Other'] as const
 
 export interface WorkOrderAssetSummary extends AssetSummary {
   confirmed?: boolean
@@ -954,8 +1005,9 @@ export async function getWorkOrders(params?: {
   const q = new URLSearchParams()
   if (params?.assigned_to) q.set('assigned_to', params.assigned_to)
   if (params?.status) q.set('status', params.status)
-  const suffix = q.toString() ? '?' + q.toString() : ''
-  const r = await request(`/work-orders/${suffix}`)
+  const query = q.toString()
+  const url = query ? `/work-orders/?${query}` : '/work-orders/'
+  const r = await request(url)
   if (!r.ok) throw new Error('Failed to get work orders')
   return r.json()
 }
@@ -963,6 +1015,145 @@ export async function getWorkOrders(params?: {
 export async function getWorkOrder(id: string): Promise<WorkOrderDetail> {
   const r = await request(`/work-orders/${id}/`)
   if (!r.ok) throw new Error('Failed to get work order')
+  return r.json()
+}
+
+export async function createShipment(workOrderId: string, data: {
+  carrier?: string
+  tracking_number?: string
+  destination_type?: string
+  notes?: string
+}): Promise<ShipmentSummary> {
+  const r = await request(`/work-orders/${workOrderId}/shipments/`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  if (!r.ok) {
+    const text = await r.text()
+    let msg = text
+    try {
+      const j = JSON.parse(text)
+      if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)
+    } catch {
+      // use text
+    }
+    throw new Error(msg)
+  }
+  return r.json()
+}
+
+// --- Shipments (standalone list / create / detail / add-remove assets) ---
+
+export async function getShipments(params?: { customer_id?: string }): Promise<ShipmentListSummary[]> {
+  const q = new URLSearchParams()
+  if (params?.customer_id) q.set('customer_id', params.customer_id)
+  const suffix = q.toString() ? '?' + q.toString() : ''
+  const r = await request(`/shipments/${suffix}`)
+  if (!r.ok) throw new Error('Failed to get shipments')
+  return r.json()
+}
+
+export async function createShipmentStandalone(data?: {
+  work_order?: string | null
+  carrier?: string
+  tracking_number?: string
+  destination_type?: string
+  notes?: string
+}): Promise<ShipmentSummary> {
+  const r = await request('/shipments/', {
+    method: 'POST',
+    body: JSON.stringify(data ?? {}),
+  })
+  if (!r.ok) {
+    const text = await r.text()
+    let msg = text
+    try {
+      const j = JSON.parse(text)
+      if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)
+    } catch {
+      // use text
+    }
+    throw new Error(msg)
+  }
+  return r.json()
+}
+
+export async function getShipment(id: string): Promise<ShipmentDetail> {
+  const r = await request(`/shipments/${id}/`)
+  if (!r.ok) throw new Error('Failed to get shipment')
+  return r.json()
+}
+
+export async function updateShipment(id: string, data: { carrier?: string; tracking_number?: string; destination_type?: string; notes?: string }): Promise<ShipmentSummary> {
+  const r = await request(`/shipments/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+  if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+
+/** Delete a shipment. Fails if the shipment has any assets (backend validates). */
+export async function deleteShipment(id: string): Promise<void> {
+  const r = await request(`/shipments/${id}/`, { method: 'DELETE' })
+  if (!r.ok) {
+    const text = await r.text()
+    let msg = text
+    try {
+      const j = JSON.parse(text)
+      if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)
+    } catch {
+      // use text
+    }
+    throw new Error(msg)
+  }
+}
+
+export async function addAssetToShipment(shipmentId: string, assetId: string): Promise<ShipmentSummary> {
+  const r = await request(`/shipments/${shipmentId}/assets/`, {
+    method: 'POST',
+    body: JSON.stringify({ asset_id: assetId }),
+  })
+  if (!r.ok) {
+    const text = await r.text()
+    let msg = text
+    try {
+      const j = JSON.parse(text)
+      if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)
+    } catch {
+      // use text
+    }
+    throw new Error(msg)
+  }
+  return r.json()
+}
+
+export async function removeAssetFromShipment(shipmentId: string, assetId: string): Promise<void> {
+  const r = await request(`/shipments/${shipmentId}/assets/${assetId}/`, { method: 'DELETE' })
+  if (!r.ok) throw new Error('Failed to remove asset from shipment')
+}
+
+export interface ShipmentImportResult {
+  added: Array<{ asset_id: string; internal_asset_id: string }>
+  blocked: Array<{ asset_id: string; internal_asset_id: string; shipment_id: string }>
+}
+
+export async function importWorkOrderIntoShipment(shipmentId: string, workOrderId: string): Promise<ShipmentImportResult> {
+  const r = await request(`/shipments/${shipmentId}/import-from-work-order/`, {
+    method: 'POST',
+    body: JSON.stringify({ work_order_id: workOrderId }),
+  })
+  if (!r.ok) {
+    const text = await r.text()
+    let msg = text
+    try {
+      const j = JSON.parse(text)
+      if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)
+    } catch {
+      // use text
+    }
+    throw new Error(msg)
+  }
   return r.json()
 }
 
@@ -1090,6 +1281,9 @@ export async function confirmWorkOrder(data: {
     asset_id: string
     release_destination: string
   }>
+  carrier?: string
+  tracking_number?: string
+  destination_type?: string
 }): Promise<WorkOrderConfirmResponse> {
   const r = await request('/work-orders/confirm/', {
     method: 'POST',

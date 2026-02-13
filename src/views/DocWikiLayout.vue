@@ -178,7 +178,8 @@ async function submitAccept() {
   acceptLoading.value = true
   try {
     await acknowledgePolicies(currentHash.value)
-    const redirect = (route.query.redirect as string) || '/employee-portal'
+    const raw = (route.query.redirect as string) || '/employee-portal'
+    const redirect = typeof raw === 'string' ? raw.split('?')[0].trim() || '/employee-portal' : '/employee-portal'
     await router.push(redirect)
   } catch (e) {
     acceptError.value = e instanceof Error ? e.message : 'Failed to acknowledge'
