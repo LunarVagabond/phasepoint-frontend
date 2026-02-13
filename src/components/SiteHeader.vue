@@ -14,6 +14,8 @@
           <a v-else href="#" class="disabled" @click.prevent>Batches</a>
           <router-link v-if="!policyOnly" to="/employee-portal/assets" active-class="active">Assets</router-link>
           <a v-else href="#" class="disabled" @click.prevent>Assets</a>
+          <router-link v-if="!policyOnly" to="/employee-portal/work-orders" active-class="active">Work Orders</router-link>
+          <a v-else href="#" class="disabled" @click.prevent>Work Orders</a>
         </div>
       </details>
       <span class="nav-sep" aria-hidden="true">|</span>
@@ -94,7 +96,8 @@ watch(
 const isOperationsActive = computed(() => {
   const name = route.name as string
   const path = route.path
-  return name === 'Intake' || name === 'Batches' || name === 'Assets' || path.startsWith('/employee-portal/intake') || path.startsWith('/employee-portal/batches') || path.startsWith('/employee-portal/assets')
+  return name === 'Intake' || name === 'Batches' || name === 'Assets' || name === 'OperationsWorkOrders' || name === 'WorkOrderDetail' ||
+    path.startsWith('/employee-portal/intake') || path.startsWith('/employee-portal/batches') || path.startsWith('/employee-portal/assets') || path.startsWith('/employee-portal/work-orders')
 })
 
 const isReportsAuditActive = computed(() => {

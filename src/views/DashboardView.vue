@@ -419,12 +419,6 @@
             <label class="field-label" for="edit-user-phone">Phone</label>
             <input id="edit-user-phone" v-model="editPhone" type="tel" class="text-input" placeholder="Phone" />
           </div>
-          <div class="form-row form-row-check">
-            <label class="group-check">
-              <input type="checkbox" v-model="editIsStaff" />
-              Staff (can access Django admin)
-            </label>
-          </div>
           <p class="modal-sub">Assign groups</p>
           <div v-if="groups.length" class="group-list">
             <label v-for="g in groups" :key="g.id" class="group-check">
@@ -641,7 +635,6 @@ const editEmail = ref('')
 const editFirstName = ref('')
 const editLastName = ref('')
 const editPhone = ref('')
-const editIsStaff = ref(false)
 const editGroupIds = ref<number[]>([])
 const saving = ref(false)
 
@@ -907,7 +900,6 @@ function openEdit(row: UserSummary | Record<string, unknown>) {
   editFirstName.value = user.first_name ?? ''
   editLastName.value = user.last_name ?? ''
   editPhone.value = user.phone ?? ''
-  editIsStaff.value = user.is_staff ?? false
   const groupIds = groups.value.filter((g) => user.groups_display.includes(g.name)).map((g) => g.id)
   editGroupIds.value = [...groupIds]
 }
@@ -921,7 +913,6 @@ async function saveEdit() {
       first_name: editFirstName.value.trim() || undefined,
       last_name: editLastName.value.trim() || undefined,
       phone: editPhone.value.trim() || undefined,
-      is_staff: editIsStaff.value,
       groups: editGroupIds.value,
     })
     editingUser.value = null
@@ -1029,8 +1020,8 @@ async function loadOpenWorkOrders() {
 function openWorkOrder(row: Record<string, unknown>) {
   const id = row.id as string
   if (!id) return
-  // Navigate to assets page filtered by work order
-  window.location.href = `/employee-portal/assets?work_order=${id}`
+  // Navigate to dedicated work order detail page
+  router.push(`/employee-portal/work-orders/${id}`)
 }
 
 onMounted(async () => {

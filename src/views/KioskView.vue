@@ -1,5 +1,5 @@
 <template>
-  <div class="kiosk-view">
+  <div class="kiosk-view" :class="{ 'kiosk-view--completed': currentWorkOrder?.status === 'COMPLETED' }">
     <!-- Unlock: scan badge (user UUID) -->
     <template v-if="!unlocked">
       <header class="kiosk-header">
@@ -74,37 +74,58 @@
 
           <div v-if="currentWorkOrder.assets.length > 0" class="assets-confirmation">
             <h3>Select assets to confirm:</h3>
-            <div class="assets-list">
-              <label
-                v-for="asset in currentWorkOrder.assets"
-                :key="asset.id"
-                class="asset-checkbox-label"
-                :class="{ 'asset-checked': confirmedAssetIds.has(asset.id) }"
-              >
-                <input
-                  type="checkbox"
-                  :value="asset.id"
-                  :checked="confirmedAssetIds.has(asset.id)"
-                  @change="toggleAssetConfirmation(asset.id)"
-                />
-                <div class="asset-info">
-                  <strong>{{ asset.internal_asset_id }}</strong>
-                  <span class="asset-details">
-                    {{ asset.manufacturer_model || '—' }} · {{ asset.status }} @ {{ asset.location }}
-                  </span>
-                </div>
-              </label>
+            <div class="assets-table-container">
+              <table class="kiosk-assets-table">
+                <thead>
+                  <tr>
+                    <th>Select</th>
+                    <th>Asset ID</th>
+                    <th>Details</th>
+                    <th v-if="showReleaseDestination">Release Destination</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="asset in currentWorkOrder.assets"
+                    :key="asset.id"
+                    :class="{ 'asset-row-selected': confirmedAssetIds.has(asset.id) }"
+                  >
+                    <td>
+                      <input
+                        type="checkbox"
+                        :value="asset.id"
+                        :checked="confirmedAssetIds.has(asset.id)"
+                        @change="toggleAssetConfirmation(asset.id)"
+                      />
+                    </td>
+                    <td><strong>{{ asset.internal_asset_id }}</strong></td>
+                    <td class="asset-details-cell">
+                      {{ asset.manufacturer_model || '—' }} · {{ asset.status }} @ {{ asset.location }}
+                    </td>
+                    <td v-if="showReleaseDestination" class="destination-cell">
+                      <select
+                        v-model="assetDestinations[asset.id]"
+                        class="kiosk-select kiosk-destination-select"
+                        :disabled="!confirmedAssetIds.has(asset.id)"
+                      >
+                        <option value="">— Select —</option>
+                        <option value="Re-sale">Re-sale</option>
+                        <option value="Recycler">Recycler</option>
+                        <option value="Other">Other</option>
+                      </select>
+                      <input
+                        v-if="confirmedAssetIds.has(asset.id) && assetDestinations[asset.id] === 'Other'"
+                        v-model="assetDestinationOther[asset.id]"
+                        type="text"
+                        class="kiosk-input kiosk-other-input"
+                        placeholder="Specify other destination (required)"
+                        maxlength="200"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </div>
-
-          <div v-if="showReleaseDestination" class="kiosk-release-row">
-            <label for="kiosk-release-dest">Release destination (for ship)</label>
-            <select id="kiosk-release-dest" v-model="releaseDestination" class="kiosk-select">
-              <option value="">— Select —</option>
-              <option value="Re-sale">Re-sale</option>
-              <option value="Recycler">Recycler</option>
-              <option value="Other">Other</option>
-            </select>
           </div>
 
           <div class="kiosk-actions">
@@ -114,7 +135,7 @@
             <button
               type="button"
               class="kiosk-submit"
-              :disabled="confirmedAssetIds.size === 0 || confirming"
+              :disabled="!canSubmit || confirming"
               @click="confirmWorkOrderBatch"
             >
               {{ confirming ? 'Confirming…' : `Confirm ${confirmedAssetIds.size} Asset(s)` }}
@@ -169,15 +190,28 @@ const loadingWorkOrder = ref(false)
 const scanError = ref('')
 const currentWorkOrder = ref<WorkOrderDetail | null>(null)
 const confirmedAssetIds = ref<Set<string>>(new Set())
+const assetDestinations = ref<Record<string, string>>({})
+const assetDestinationOther = ref<Record<string, string>>({})  // required when destination is "Other"
 const releaseDestination = ref('')
 const confirming = ref(false)
 const confirmError = ref('')
 const confirmSuccess = ref('')
 
 const showReleaseDestination = computed(() => {
-  if (!currentWorkOrder.value) return false
-  const transitions = config.value?.allowed_transitions ?? []
-  return transitions.some((code: string) => code.split('|')[3] === 'SHIPPED')
+  // Only show release destination for CLEAN_CAGE kiosks (they handle shipping)
+  return config.value?.assigned_location === 'CLEAN_CAGE'
+})
+
+const canSubmit = computed(() => {
+  if (confirmedAssetIds.value.size === 0) return false
+  if (!showReleaseDestination.value) return true
+  // CLEAN_CAGE: every confirmed asset must have a release destination; "Other" requires text
+  for (const id of confirmedAssetIds.value) {
+    const dest = assetDestinations.value[id]?.trim()
+    if (!dest) return false
+    if (dest === 'Other' && !assetDestinationOther.value[id]?.trim()) return false
+  }
+  return true
 })
 
 let idleTimer: ReturnType<typeof setTimeout> | null = null
@@ -265,6 +299,8 @@ async function onScan() {
     const result = await scanConfirmWorkOrder(payload)
     currentWorkOrder.value = result.work_order
     confirmedAssetIds.value = new Set()
+    assetDestinations.value = {}
+    assetDestinationOther.value = {}
     scanInput.value = ''
   } catch (e) {
     scanError.value = e instanceof Error ? e.message : 'Failed to load work order.'
@@ -276,14 +312,21 @@ async function onScan() {
 function toggleAssetConfirmation(assetId: string) {
   if (confirmedAssetIds.value.has(assetId)) {
     confirmedAssetIds.value.delete(assetId)
+    delete assetDestinations.value[assetId]
+    delete assetDestinationOther.value[assetId]
   } else {
     confirmedAssetIds.value.add(assetId)
+    if (showReleaseDestination.value && assetDestinations.value[assetId] === undefined) {
+      assetDestinations.value[assetId] = ''
+    }
   }
 }
 
 function resetWorkOrder() {
   currentWorkOrder.value = null
   confirmedAssetIds.value = new Set()
+  assetDestinations.value = {}
+  assetDestinationOther.value = {}
   releaseDestination.value = ''
   confirmError.value = ''
   confirmSuccess.value = ''
@@ -291,16 +334,30 @@ function resetWorkOrder() {
 }
 
 async function confirmWorkOrderBatch() {
-  if (!currentWorkOrder.value || confirmedAssetIds.value.size === 0 || !kioskId) return
+  if (!currentWorkOrder.value || !canSubmit.value || !kioskId) return
   confirmError.value = ''
   confirmSuccess.value = ''
   confirming.value = true
   try {
+    // Build asset_destinations array for CLEAN_CAGE -> SHIPPED assets
+    const assetDestinationsArray = showReleaseDestination.value
+      ? Array.from(confirmedAssetIds.value).map(assetId => {
+          const dest = assetDestinations.value[assetId] || ''
+          const otherText = assetDestinationOther.value[assetId]?.trim()
+          const release_destination = dest === 'Other' && otherText
+            ? `Other: ${otherText}`
+            : dest
+          return { asset_id: assetId, release_destination }
+        })
+      : undefined
+    
     const result = await confirmWorkOrderApi({
       work_order_id: currentWorkOrder.value.id,
       confirmed_asset_ids: Array.from(confirmedAssetIds.value),
       kiosk_id: kioskId,
-      release_destination: releaseDestination.value || undefined,
+      asset_destinations: assetDestinationsArray,
+      // Keep release_destination for backward compatibility if not using per-asset destinations
+      release_destination: !showReleaseDestination.value ? releaseDestination.value || undefined : undefined,
     })
     
     if (result.errors && result.errors.length > 0) {
@@ -318,6 +375,8 @@ async function confirmWorkOrderBatch() {
         })
         currentWorkOrder.value = updated.work_order
         confirmedAssetIds.value = new Set()
+        assetDestinations.value = {}
+        assetDestinationOther.value = {}
         releaseDestination.value = ''
       } catch {
         // If reload fails, reset
@@ -354,6 +413,18 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 @use '../styles/variables' as *;
+
+.kiosk-view {
+  min-height: 100vh;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &--completed {
+    border: 4px solid var(--color-success);
+    border-radius: $radius-md;
+    box-shadow: 0 0 0 1px var(--color-success);
+  }
+}
 
 .work-order-info {
   text-align: left;
@@ -393,9 +464,108 @@ onMounted(async () => {
 .assets-confirmation {
   text-align: left;
   margin-bottom: $space-6;
-  max-width: 600px;
+  max-width: 800px;
   margin-left: auto;
   margin-right: auto;
+  
+  .assets-table-container {
+    overflow-x: auto;
+    margin-top: $space-4;
+  }
+  
+  .assets-table,
+  .kiosk-assets-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--color-surface);
+    border-radius: $radius-md;
+    overflow: hidden;
+
+    thead {
+      background: var(--color-background-secondary);
+
+      th {
+        padding: $space-3 $space-4;
+        text-align: left;
+        font-weight: 600;
+        font-size: $font-size-sm;
+        color: var(--color-text-secondary);
+        border-bottom: 2px solid var(--color-border);
+      }
+    }
+
+    tbody {
+      tr {
+        border-bottom: 1px solid var(--color-border);
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        &.asset-row-selected {
+          background: rgba(var(--color-primary-rgb, 33, 150, 243), 0.05);
+        }
+
+        &:hover {
+          background: rgba(var(--color-primary-rgb, 33, 150, 243), 0.02);
+        }
+      }
+
+      td {
+        padding: $space-3 $space-4;
+        vertical-align: middle;
+
+        .asset-details {
+          font-size: $font-size-sm;
+          color: var(--color-text-secondary);
+        }
+
+        &.asset-details-cell {
+          font-size: $font-size-sm;
+          color: var(--color-text-secondary);
+        }
+      }
+    }
+  }
+
+  .kiosk-destination-select,
+  .kiosk-select-small {
+    min-width: 150px;
+    padding: $space-2;
+    font-size: $font-size-sm;
+  }
+
+  .destination-cell {
+    display: flex;
+    flex-direction: column;
+    gap: $space-2;
+    align-items: flex-start;
+  }
+
+  .kiosk-other-input {
+    width: 100%;
+    max-width: 280px;
+    padding: $space-2 $space-3;
+    font-size: $font-size-sm;
+    border: 1px solid var(--color-border);
+    border-radius: $radius-md;
+    background: var(--color-background);
+    color: var(--color-text);
+
+    &::placeholder {
+      color: var(--color-text-muted);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+    }
+  }
+  
+  .text-muted {
+    color: var(--color-text-secondary);
+    font-style: italic;
+  }
 
   h3 {
     margin: 0 0 $space-3;

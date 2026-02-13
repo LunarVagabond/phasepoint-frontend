@@ -934,7 +934,10 @@ export interface WorkOrderSummary {
 export interface WorkOrderDetail extends WorkOrderSummary {
   customers: string[]
   notes: string
-  assets: AssetSummary[]
+  assets: Array<AssetSummary & {
+    latest_sanitization_record_id?: string | null
+    latest_sanitization_result?: 'PASS' | 'FAIL' | null
+  }>
   location_summary: Record<string, { label: string; count: number }>
   sanitization_summary: { passed: number; failed: number }
   destination_summary: Record<string, number>
@@ -1083,8 +1086,12 @@ export async function confirmWorkOrder(data: {
   confirmed_asset_ids: string[]
   kiosk_id?: string
   release_destination?: string
+  asset_destinations?: Array<{
+    asset_id: string
+    release_destination: string
+  }>
 }): Promise<WorkOrderConfirmResponse> {
-  const r = await request('/custody-requests/work-order-confirm/', {
+  const r = await request('/work-orders/confirm/', {
     method: 'POST',
     body: JSON.stringify(data),
   })
@@ -1114,7 +1121,55 @@ export async function scanConfirmWorkOrder(data: {
   work_order_number?: string
   kiosk_id?: string
 }): Promise<ScanConfirmWorkOrderResponse> {
-  const r = await request('/custody-requests/scan-confirm/', {
+  const r = await request('/kiosks/scan-confirm/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  if (!r.ok) {
+    const text = await r.text()
+    let msg = text
+    try {
+      const j = JSON.parse(text)
+      if (j.detail) msg = j.detail
+    } catch {
+      // use text
+    }
+    throw new Error(msg)
+  }
+  return r.json()
+}
+
+export interface RecordSanitizationRequest {
+  asset_sanitizations: Array<{
+    asset_id: string
+    sanitization_result: 'PASS' | 'FAIL'
+    sanitization_method?: string
+    sanitization_tool?: string
+    location?: string
+  }>
+}
+
+export interface RecordSanitizationResponse {
+  work_order_id: string
+  processed: Array<{
+    asset_id: string
+    internal_asset_id: string
+    sanitization_result: string
+    location: string
+  }>
+  errors: string[]
+  sanitization_summary: {
+    PASS: number
+    FAIL: number
+  }
+  work_order_status: string
+}
+
+export async function recordWorkOrderSanitization(
+  workOrderId: string,
+  data: RecordSanitizationRequest
+): Promise<RecordSanitizationResponse> {
+  const r = await request(`/work-orders/${workOrderId}/record-sanitization/`, {
     method: 'POST',
     body: JSON.stringify(data),
   })
