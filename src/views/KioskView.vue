@@ -183,6 +183,7 @@
 import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
 import {
   getKioskConfig,
+  getApiBaseForRedirect,
   kioskRegister,
   scanConfirmWorkOrder,
   confirmWorkOrder as confirmWorkOrderApi,
@@ -297,7 +298,7 @@ async function onBadgeUnlock() {
 
 function lock() {
   clearIdleTimer()
-  const base = (API_URL || "").replace(/\/api\/?$/, "") || "http://localhost:3332"
+  const base = getApiBaseForRedirect()
   const next = encodeURIComponent(window.location.origin + "/kiosk")
   window.location.href = `${base}/api/auth/logout/?next=${next}`
 }

@@ -71,6 +71,7 @@
 <script setup lang="ts">
 import { computed, inject, ref, onMounted, onUnmounted, watch, type Ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { getApiBaseForRedirect } from '../api'
 
 defineProps<{
   policyOnly?: boolean
@@ -151,7 +152,7 @@ onUnmounted(() => {
 })
 
 function logout() {
-  const apiBase = (import.meta.env.VITE_API_URL || "http://localhost:3332/api").replace(/\/api\/?$/, "") || "http://localhost:3332"
+  const apiBase = getApiBaseForRedirect()
   const nextUrl = encodeURIComponent(window.location.origin + "/employee-portal/login")
   window.location.href = `${apiBase}/api/auth/logout/?next=${nextUrl}`
 }

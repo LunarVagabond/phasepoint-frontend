@@ -44,7 +44,7 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, onUnmounted, ref, type Ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { getCustomerContext, getCustomerProfile, getMe, updateCustomerProfile } from '../api'
+import { getApiBaseForRedirect, getCustomerContext, getCustomerProfile, getMe, updateCustomerProfile } from '../api'
 import CustomerProfileCompletionModal from '../components/CustomerProfileCompletionModal.vue'
 
 const showProfileModal = ref(false)
@@ -69,7 +69,7 @@ const basePath = computed(() => {
   return '/customer-portal'
 })
 function logout() {
-  const apiBase = (import.meta.env.VITE_API_URL || "http://localhost:3332/api").replace(/\/api\/?$/, "") || "http://localhost:3332"
+  const apiBase = getApiBaseForRedirect()
   const nextUrl = encodeURIComponent(window.location.origin + "/customer/login")
   window.location.href = `${apiBase}/api/auth/logout/?next=${nextUrl}`
 }

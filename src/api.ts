@@ -1807,4 +1807,11 @@ export async function updateIntakeRequest(
   return r.json()
 }
 
+/** Base URL for full-page redirects (e.g. logout). Uses VITE_API_URL when absolute; otherwise current origin. */
+export function getApiBaseForRedirect(): string {
+  const url = import.meta.env.VITE_API_URL || API_URL || ''
+  if (url.startsWith('http')) return url.replace(/\/api\/?$/, '')
+  return typeof window !== 'undefined' ? window.location.origin : ''
+}
+
 export { request, API_URL }
