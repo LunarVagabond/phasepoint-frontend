@@ -114,8 +114,32 @@
       :row-click="openDetail"
       :show-selection="true"
       :selected-row-keys="Array.from(selectedAssetIds)"
+      :sticky-header="true"
       @update:selected-row-keys="selectedAssetIds = new Set($event)"
     />
+    <div v-if="!loading && assetTotalCount > 0" class="assets-pagination">
+      <span class="pagination-info">
+        {{ (assetPage - 1) * ASSET_PAGE_SIZE + 1 }}–{{ Math.min(assetPage * ASSET_PAGE_SIZE, assetTotalCount) }} of {{ assetTotalCount }}
+      </span>
+      <div class="pagination-buttons">
+        <button
+          type="button"
+          class="btn-pagination"
+          :disabled="assetPage <= 1"
+          @click="goToAssetPage(assetPage - 1)"
+        >
+          Previous
+        </button>
+        <button
+          type="button"
+          class="btn-pagination"
+          :disabled="assetPage * ASSET_PAGE_SIZE >= assetTotalCount"
+          @click="goToAssetPage(assetPage + 1)"
+        >
+          Next
+        </button>
+      </div>
+    </div>
 
     <div v-if="showCreateWorkOrderModal" class="modal-backdrop" @click.self="closeCreateWorkOrderModal">
       <div class="modal" @click.stop>
@@ -269,6 +293,7 @@
                   class="text-input notes-textarea"
                   placeholder="Internal notes (not shown to customers)"
                   rows="2"
+                  @blur="saveNotesIfChanged"
                 />
               </div>
               <div class="form-row">
@@ -278,6 +303,7 @@
                   class="text-input notes-textarea"
                   placeholder="Notes visible to the customer"
                   rows="2"
+                  @blur="saveNotesIfChanged"
                 />
               </div>
             </div>
@@ -287,7 +313,7 @@
             <h3 class="detail-section-title">History (audit log)</h3>
             <ul v-if="assetAuditEvents.length" class="request-list">
               <li v-for="ev in assetAuditEvents" :key="ev.id" class="request-item">
-                <span class="request-item-loc">{{ getEventTypeDisplay(ev.event_type) }}</span>
+                <span class="request-item-loc">{{ getAuditEventDisplayText(ev) }}</span>
                 <span class="request-item-meta">{{ formatDate(ev.timestamp) }}</span>
               </li>
             </ul>
@@ -325,7 +351,7 @@ import {
 } from '../api'
 import type { WorkOrderSummary } from '../api'
 import DataTable from '../components/DataTable.vue'
-import { getEventTypeDisplay } from '../api'
+import { getAuditEventDisplayText } from '../api'
 import type { AssetSummary, AssetDetail, IntakeBatchSummary } from '../api'
 import type { DataTableColumn } from '../components/DataTable.vue'
 
@@ -343,25 +369,17 @@ const assetColumns: DataTableColumn[] = [
   { key: 'intake_employee_username', label: 'Intake by' },
 ]
 
+const ASSET_PAGE_SIZE = 50
 const searchQuery = ref('')
 const assets = ref<AssetSummary[]>([])
+const assetTotalCount = ref(0)
+const assetPage = ref(1)
 const customers = ref<Awaited<ReturnType<typeof getCustomers>>>([])
 const loading = ref(true)
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
+const SEARCH_DEBOUNCE_MS = 400
 
-const filteredAssets = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return assets.value
-  return assets.value.filter(
-    (a) =>
-      (a.internal_asset_id && a.internal_asset_id.toLowerCase().includes(q)) ||
-      (a.manufacturer_model && a.manufacturer_model.toLowerCase().includes(q)) ||
-      (a.serial_number && a.serial_number.toLowerCase().includes(q)) ||
-      (a.customer_name && a.customer_name.toLowerCase().includes(q)) ||
-      (a.status && a.status.toLowerCase().includes(q)) ||
-      (a.location && a.location.toLowerCase().includes(q)) ||
-      (a.intake_employee_username && a.intake_employee_username.toLowerCase().includes(q))
-  )
-})
+const filteredAssets = computed(() => assets.value)
 
 const detailAssetId = ref<string | null>(null)
 const detailAsset = ref<AssetDetail | null>(null)
@@ -369,13 +387,14 @@ const detailLoading = ref(false)
 const internalNotes = ref('')
 const publicNotes = ref('')
 const notesShowSavedFlash = ref(false)
-let notesDebounceTimer: ReturnType<typeof setTimeout> | null = null
-const NOTES_DEBOUNCE_MS = 700
+/** Last loaded/saved values so we only save when user actually changed something. */
+const loadedInternalNotes = ref('')
+const loadedPublicNotes = ref('')
 
 const intakeBatchId = computed(() => (route.query.intake_batch as string) || null)
 const workOrderId = computed(() => (route.query.work_order as string) || null)
 const intakeBatch = ref<IntakeBatchSummary | null>(null)
-const assetAuditEvents = ref<Awaited<ReturnType<typeof getAuditEvents>>>([])
+const assetAuditEvents = ref<import('../api').AuditEventSummary[]>([])
 
 const filters = reactive({
   workOrder: '',
@@ -428,17 +447,10 @@ function formatDate(iso: string) {
 
 async function load() {
   try {
-    const params: {
-      intake_batch?: string
-      work_order?: string
-      status?: string
-      location?: string
-      customer_id?: string
-      created_after?: string
-      created_before?: string
-    } = {}
-    
-    // URL query params take precedence
+    const params: Parameters<typeof getAssets>[0] = {
+      page: assetPage.value,
+      page_size: ASSET_PAGE_SIZE,
+    }
     if (intakeBatchId.value) {
       params.intake_batch = intakeBatchId.value
     }
@@ -447,33 +459,25 @@ async function load() {
     } else if (filters.workOrder) {
       params.work_order = filters.workOrder
     }
-    
-    // Apply other filters
-    if (filters.status) {
-      params.status = filters.status
-    }
-    if (filters.location) {
-      params.location = filters.location
-    }
-    if (filters.customerId) {
-      params.customer_id = filters.customerId
-    }
+    if (filters.status) params.status = filters.status
+    if (filters.location) params.location = filters.location
+    if (filters.customerId) params.customer_id = filters.customerId
     if (filters.createdAfter) {
-      // Convert date to ISO datetime string
       const date = new Date(filters.createdAfter)
       date.setHours(0, 0, 0, 0)
       params.created_after = date.toISOString()
     }
     if (filters.createdBefore) {
-      // Convert date to ISO datetime string (end of day)
       const date = new Date(filters.createdBefore)
       date.setHours(23, 59, 59, 999)
       params.created_before = date.toISOString()
     }
-    
-    const finalParams = Object.keys(params).length > 0 ? params : undefined
-    const [assetList, customerList] = await Promise.all([getAssets(finalParams), getCustomers()])
-    assets.value = assetList
+    const q = searchQuery.value.trim()
+    if (q) params.search = q
+
+    const [assetRes, customerList] = await Promise.all([getAssets(params), getCustomers()])
+    assets.value = assetRes.results
+    assetTotalCount.value = assetRes.count
     customers.value = customerList
     if (intakeBatchId.value) {
       try {
@@ -513,6 +517,15 @@ async function loadMyWorkOrders() {
 function applyFilters() {
   loading.value = true
   selectedAssetIds.value = new Set()
+  assetPage.value = 1
+  load()
+}
+
+function goToAssetPage(p: number) {
+  if (p < 1) return
+  if ((p - 1) * ASSET_PAGE_SIZE >= assetTotalCount.value) return
+  assetPage.value = p
+  loading.value = true
   load()
 }
 
@@ -535,6 +548,7 @@ function clearFilters() {
       load()
     })
   } else {
+    assetPage.value = 1
     applyFilters()
   }
 }
@@ -542,18 +556,23 @@ function clearFilters() {
 watch([intakeBatchId, workOrderId], () => {
   loading.value = true
   selectedAssetIds.value = new Set()
+  assetPage.value = 1
   bulkMoveError.value = ''
   bulkMoveSuccess.value = ''
-  // Sync filters with URL params
   if (workOrderId.value) {
     filters.workOrder = workOrderId.value
   }
   load()
 })
 
-watch([internalNotes, publicNotes], () => {
-  if (!detailAssetId.value) return
-  scheduleNotesSave()
+watch(searchQuery, () => {
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+  searchDebounceTimer = setTimeout(() => {
+    searchDebounceTimer = null
+    assetPage.value = 1
+    loading.value = true
+    load()
+  }, SEARCH_DEBOUNCE_MS)
 })
 
 function openDetail(row: Record<string, unknown>) {
@@ -564,11 +583,9 @@ function openDetail(row: Record<string, unknown>) {
   detailLoading.value = true
   internalNotes.value = ''
   publicNotes.value = ''
+  loadedInternalNotes.value = ''
+  loadedPublicNotes.value = ''
   notesShowSavedFlash.value = false
-  if (notesDebounceTimer) {
-    clearTimeout(notesDebounceTimer)
-    notesDebounceTimer = null
-  }
   loadDetail()
 }
 
@@ -576,14 +593,18 @@ async function loadDetail() {
   const id = detailAssetId.value
   if (!id) return
   try {
-    const [asset, auditEvents] = await Promise.all([
+    const [asset, auditRes] = await Promise.all([
       getAsset(id),
-      getAuditEvents({ asset_id: id }),
+      getAuditEvents({ asset_id: id, page_size: 200 }),
     ])
     detailAsset.value = asset
-    internalNotes.value = asset.internal_notes ?? ''
-    publicNotes.value = asset.public_notes ?? ''
-    assetAuditEvents.value = auditEvents
+    const internal = asset.internal_notes ?? ''
+    const public_ = asset.public_notes ?? ''
+    internalNotes.value = internal
+    publicNotes.value = public_
+    loadedInternalNotes.value = internal
+    loadedPublicNotes.value = public_
+    assetAuditEvents.value = auditRes.results
   } catch {
     detailAsset.value = null
     assetAuditEvents.value = []
@@ -592,24 +613,27 @@ async function loadDetail() {
   }
 }
 
-function scheduleNotesSave() {
-  if (notesDebounceTimer) clearTimeout(notesDebounceTimer)
-  notesDebounceTimer = setTimeout(async () => {
-    notesDebounceTimer = null
-    const id = detailAssetId.value
-    if (!id || !detailAsset.value) return
-    try {
-      const updated = await updateAsset(id, {
-        internal_notes: internalNotes.value,
-        public_notes: publicNotes.value,
-      })
-      detailAsset.value = updated
-      notesShowSavedFlash.value = true
-      setTimeout(() => { notesShowSavedFlash.value = false }, 1500)
-    } catch {
-      // silent fail or could add non-text feedback later
-    }
-  }, NOTES_DEBOUNCE_MS)
+/** Save notes only when user has changed them (called on blur). */
+async function saveNotesIfChanged() {
+  const id = detailAssetId.value
+  if (!id || !detailAsset.value) return
+  if (
+    internalNotes.value === loadedInternalNotes.value &&
+    publicNotes.value === loadedPublicNotes.value
+  ) return
+  try {
+    const updated = await updateAsset(id, {
+      internal_notes: internalNotes.value,
+      public_notes: publicNotes.value,
+    })
+    detailAsset.value = updated
+    loadedInternalNotes.value = internalNotes.value
+    loadedPublicNotes.value = publicNotes.value
+    notesShowSavedFlash.value = true
+    setTimeout(() => { notesShowSavedFlash.value = false }, 1500)
+  } catch {
+    // silent fail
+  }
 }
 
 function closeDetail() {
@@ -618,11 +642,9 @@ function closeDetail() {
   assetAuditEvents.value = []
   internalNotes.value = ''
   publicNotes.value = ''
+  loadedInternalNotes.value = ''
+  loadedPublicNotes.value = ''
   notesShowSavedFlash.value = false
-  if (notesDebounceTimer) {
-    clearTimeout(notesDebounceTimer)
-    notesDebounceTimer = null
-  }
 }
 
 async function submitCreateWorkOrder() {
@@ -655,6 +677,12 @@ function closeCreateWorkOrderModal() {
 }
 
 onMounted(async () => {
+  // Pre-fill search from URL (e.g. from shipment asset link: ?asset=uuid&search=ASSET-0046)
+  const searchFromRoute = route.query.search
+  if (searchFromRoute != null && searchFromRoute !== '') {
+    searchQuery.value = typeof searchFromRoute === 'string' ? searchFromRoute : searchFromRoute[0] ?? ''
+  }
+
   // Load current user info
   try {
     const me = await getMe()
@@ -663,12 +691,12 @@ onMounted(async () => {
   } catch {
     // User info not available, continue without it
   }
-  
+
   // Sync URL params to filters
   if (workOrderId.value) {
     filters.workOrder = workOrderId.value
   }
-  
+
   load()
 })
 </script>

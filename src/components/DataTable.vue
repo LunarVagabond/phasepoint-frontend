@@ -1,5 +1,5 @@
 <template>
-  <div class="data-table-wrap">
+  <div class="data-table-wrap" :class="{ 'sticky-header': stickyHeader }">
     <table class="data-table">
       <thead>
         <tr>
@@ -76,8 +76,10 @@ const props = withDefaults(
     rowClick?: (row: Record<string, unknown>) => void
     showSelection?: boolean
     selectedRowKeys?: string[]
+    /** When true, table header row stays visible when scrolling. */
+    stickyHeader?: boolean
   }>(),
-  { loading: false, rowKey: 'id', rowClick: undefined, showSelection: false, selectedRowKeys: () => [] }
+  { loading: false, rowKey: 'id', rowClick: undefined, showSelection: false, selectedRowKeys: () => [], stickyHeader: false }
 )
 
 const emit = defineEmits<{ (e: 'update:selectedRowKeys', keys: string[]): void }>()

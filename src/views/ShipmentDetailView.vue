@@ -5,22 +5,40 @@
     <div v-else-if="shipment" class="shipment-content">
       <header class="page-header">
         <button type="button" class="btn-back" @click="$router.push('/employee-portal/shipments')">← Shipments</button>
-        <h1>Shipment {{ shipment.tracking_number || shipment.id.slice(0, 8) }}</h1>
-        <p class="meta">Shipped {{ formatDate(shipment.shipped_at) }}</p>
+        <div class="page-header-row">
+          <h1>Shipment {{ shipment.tracking_number || shipment.id.slice(0, 8) }}</h1>
+          <span v-if="shipment.status === 'SHIPPED'" class="badge badge-completed">Completed</span>
+          <span v-else class="badge badge-draft">Draft</span>
+        </div>
+        <p v-if="shipment.status === 'SHIPPED' && (shipment.completed_by_username || shipment.shipped_at)" class="meta">
+          Closed by {{ shipment.completed_by_username ?? '—' }}
+          <template v-if="shipment.shipped_at"> on {{ formatDate(shipment.shipped_at) }}</template>
+        </p>
+        <p v-else class="meta">Not yet completed</p>
       </header>
 
       <section class="info-section">
         <div class="info-section-head">
           <h2>Details</h2>
-          <button
-            v-if="!shipment.assets?.length"
-            type="button"
-            class="btn-delete-shipment"
-            title="Delete empty shipment"
-            aria-label="Delete empty shipment"
-            :disabled="deleteSubmitting"
-            @click="confirmDeleteShipment"
-          >
+          <div class="info-section-actions">
+            <button
+              v-if="shipment.status === 'DRAFT'"
+              type="button"
+              class="btn-mark-completed"
+              :disabled="markCompletedSubmitting"
+              @click="confirmMarkCompleted"
+            >
+              {{ markCompletedSubmitting ? 'Completing…' : 'Mark completed' }}
+            </button>
+            <button
+              v-if="shipment.status === 'DRAFT' && !shipment.assets?.length"
+              type="button"
+              class="btn-delete-shipment"
+              title="Delete empty shipment"
+              aria-label="Delete empty shipment"
+              :disabled="deleteSubmitting"
+              @click="confirmDeleteShipment"
+            >
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polyline points="3 6 5 6 21 6" />
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -29,12 +47,13 @@
             </svg>
             <span v-if="deleteSubmitting" class="btn-delete-label">Deleting…</span>
           </button>
+          </div>
         </div>
         <div class="details-form">
           <div class="form-row">
             <label for="detail-carrier">Carrier</label>
             <input
-              v-if="editingField === 'carrier'"
+              v-if="shipment.status === 'DRAFT' && editingField === 'carrier'"
               id="detail-carrier"
               ref="carrierInputRef"
               v-model="editCarrier"
@@ -46,10 +65,11 @@
             <div
               v-else
               class="editable-text"
+              :class="{ 'editable-text--readonly': shipment.status === 'SHIPPED' }"
               role="button"
               tabindex="0"
-              @click="startEditField('carrier')"
-              @keydown.enter.space.prevent="startEditField('carrier')"
+              @click="shipment.status === 'DRAFT' && startEditField('carrier')"
+              @keydown.enter.space.prevent="shipment.status === 'DRAFT' && startEditField('carrier')"
             >
               {{ shipment.carrier || '—' }}
             </div>
@@ -57,7 +77,7 @@
           <div class="form-row">
             <label for="detail-tracking">Tracking number</label>
             <input
-              v-if="editingField === 'tracking_number'"
+              v-if="shipment.status === 'DRAFT' && editingField === 'tracking_number'"
               id="detail-tracking"
               ref="trackingInputRef"
               v-model="editTrackingNumber"
@@ -69,10 +89,11 @@
             <div
               v-else
               class="editable-text"
+              :class="{ 'editable-text--readonly': shipment.status === 'SHIPPED' }"
               role="button"
               tabindex="0"
-              @click="startEditField('tracking_number')"
-              @keydown.enter.space.prevent="startEditField('tracking_number')"
+              @click="shipment.status === 'DRAFT' && startEditField('tracking_number')"
+              @keydown.enter.space.prevent="shipment.status === 'DRAFT' && startEditField('tracking_number')"
             >
               {{ shipment.tracking_number || '—' }}
             </div>
@@ -80,7 +101,7 @@
           <div class="form-row">
             <label for="detail-destination">Destination type</label>
             <select
-              v-if="editingField === 'destination_type'"
+              v-if="shipment.status === 'DRAFT' && editingField === 'destination_type'"
               id="detail-destination"
               ref="destinationSelectRef"
               v-model="editDestinationType"
@@ -94,10 +115,11 @@
             <div
               v-else
               class="editable-text"
+              :class="{ 'editable-text--readonly': shipment.status === 'SHIPPED' }"
               role="button"
               tabindex="0"
-              @click="startEditField('destination_type')"
-              @keydown.enter.space.prevent="startEditField('destination_type')"
+              @click="shipment.status === 'DRAFT' && startEditField('destination_type')"
+              @keydown.enter.space.prevent="shipment.status === 'DRAFT' && startEditField('destination_type')"
             >
               {{ shipment.destination_type || '—' }}
             </div>
@@ -105,7 +127,7 @@
           <div class="form-row">
             <label for="detail-notes">Notes</label>
             <textarea
-              v-if="editingField === 'notes'"
+              v-if="shipment.status === 'DRAFT' && editingField === 'notes'"
               id="detail-notes"
               ref="notesInputRef"
               v-model="editNotes"
@@ -117,10 +139,11 @@
             <div
               v-else
               class="editable-text"
+              :class="{ 'editable-text--readonly': shipment.status === 'SHIPPED' }"
               role="button"
               tabindex="0"
-              @click="startEditField('notes')"
-              @keydown.enter.space.prevent="startEditField('notes')"
+              @click="shipment.status === 'DRAFT' && startEditField('notes')"
+              @keydown.enter.space.prevent="shipment.status === 'DRAFT' && startEditField('notes')"
             >
               {{ shipment.notes || '—' }}
             </div>
@@ -145,7 +168,7 @@
           </button>
         </div>
 
-        <div class="add-assets-inline">
+        <div v-if="shipment.status === 'DRAFT'" class="add-assets-inline">
           <div class="add-asset-group">
             <label class="add-asset-label">Import from work order</label>
             <div class="add-asset-controls">
@@ -206,14 +229,21 @@
               </thead>
               <tbody>
                 <tr v-for="asset in filteredShipmentAssets" :key="asset.id">
-                  <td><router-link :to="`/employee-portal/assets?asset=${asset.id}`">{{ asset.internal_asset_id }}</router-link></td>
+                  <td><router-link :to="assetsLinkForAsset(asset)">{{ asset.internal_asset_id }}</router-link></td>
                   <td>{{ asset.serial_number || '—' }}</td>
                   <td><span class="badge">{{ asset.status }}</span></td>
                   <td>{{ asset.location }}</td>
                   <td>
-                    <button type="button" class="btn-remove" :disabled="removeSubmitting === asset.id" @click="removeAsset(asset.id)">
+                    <button
+                      v-if="shipment.status === 'DRAFT'"
+                      type="button"
+                      class="btn-remove"
+                      :disabled="removeSubmitting === asset.id"
+                      @click="removeAsset(asset.id)"
+                    >
                       {{ removeSubmitting === asset.id ? '…' : 'Remove' }}
                     </button>
+                    <span v-else class="cell-empty">—</span>
                   </td>
                 </tr>
               </tbody>
@@ -240,6 +270,7 @@ import {
   importWorkOrderIntoShipment,
   updateShipment,
   deleteShipment,
+  markShipmentCompleted,
   SHIPMENT_DESTINATION_TYPES,
   type ShipmentDetail,
   type WorkOrderSummary,
@@ -267,6 +298,7 @@ const editNotes = ref('')
 const detailsSaving = ref(false)
 const detailsError = ref('')
 const deleteSubmitting = ref(false)
+const markCompletedSubmitting = ref(false)
 const editingField = ref<'carrier' | 'tracking_number' | 'destination_type' | 'notes' | null>(null)
 const carrierInputRef = ref<HTMLInputElement | null>(null)
 const trackingInputRef = ref<HTMLInputElement | null>(null)
@@ -319,6 +351,14 @@ function formatDate(iso: string) {
   } catch {
     return iso
   }
+}
+
+/** Link to assets list with search pre-filled so this asset is easy to find. */
+function assetsLinkForAsset(asset: { id: string; internal_asset_id: string }): string {
+  const params = new URLSearchParams()
+  params.set('asset', asset.id)
+  if (asset.internal_asset_id) params.set('search', asset.internal_asset_id)
+  return `/employee-portal/assets?${params.toString()}`
 }
 
 function isDetailsDirty(): boolean {
@@ -395,6 +435,23 @@ async function saveDetailsOnBlur() {
   }
 }
 
+function confirmMarkCompleted() {
+  if (!shipment.value || shipment.value.status !== 'DRAFT') return
+  if (!window.confirm('Mark this shipment as completed? The shipment will be locked and no further changes can be made.')) return
+  markCompletedSubmitting.value = true
+  detailsError.value = ''
+  markShipmentCompleted(shipment.value.id)
+    .then((updated) => {
+      shipment.value = updated
+    })
+    .catch((e) => {
+      detailsError.value = e instanceof Error ? e.message : 'Failed to mark completed'
+    })
+    .finally(() => {
+      markCompletedSubmitting.value = false
+    })
+}
+
 function confirmDeleteShipment() {
   if (!shipment.value || shipment.value.assets?.length) return
   if (!window.confirm('Delete this empty shipment? This cannot be undone.')) return
@@ -438,8 +495,8 @@ async function loadWorkOrders() {
 
 async function loadAssetsNotInShipment() {
   try {
-    const list = await getAssets({ not_in_shipment: true })
-    assetsNotInShipment.value = list.map(a => ({
+    const res = await getAssets({ not_in_shipment: true, page_size: 100 })
+    assetsNotInShipment.value = res.results.map(a => ({
       id: a.id,
       internal_asset_id: a.internal_asset_id,
       serial_number: a.serial_number,
@@ -539,15 +596,59 @@ watch(shipment, (s) => {
   margin-bottom: $space-2;
   padding: 0;
 }
-.page-header h1 {
+.page-header-row {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  flex-wrap: wrap;
+  margin-bottom: $space-2;
+}
+.page-header-row h1 {
+  margin: 0;
   font-size: $font-size-2xl;
   font-weight: 600;
-  margin: 0 0 $space-2;
 }
 .page-header .meta {
   color: var(--color-text-muted);
   font-size: $font-size-sm;
   margin: 0;
+}
+.badge {
+  font-size: $font-size-xs;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: $radius-md;
+}
+.badge-draft {
+  background: var(--color-bg-subtle, rgba(0 0 0 / 0.06));
+  color: var(--color-text-muted);
+}
+.badge-completed {
+  background: var(--color-success-bg, rgba(34 197 94 / 0.15));
+  color: var(--color-success, #16a34a);
+}
+.info-section-actions {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  flex-wrap: wrap;
+}
+.btn-mark-completed {
+  padding: $space-2 $space-3;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  border-radius: $radius-md;
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+  cursor: pointer;
+}
+.btn-mark-completed:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.btn-mark-completed:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .info-section,
@@ -635,6 +736,13 @@ $detail-field-height: 2.5rem;
 }
 .details-form .form-row .editable-text:hover {
   background: var(--color-bg-subtle, rgba(0 0 0 / 0.03));
+}
+.details-form .form-row .editable-text--readonly {
+  cursor: default;
+  pointer-events: none;
+}
+.details-form .form-row .editable-text--readonly:hover {
+  background: transparent;
 }
 .details-form .form-row .editable-text:focus {
   outline: none;
@@ -730,6 +838,10 @@ $detail-field-height: 2.5rem;
 .assets-table .btn-remove:hover:not(:disabled) {
   border-color: var(--color-error);
   color: var(--color-error);
+}
+.assets-table .cell-empty {
+  color: var(--color-text-muted);
+  font-size: $font-size-sm;
 }
 
 .empty-hint {

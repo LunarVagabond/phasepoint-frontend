@@ -780,6 +780,13 @@ export async function createAsset(data: AssetIntakeData): Promise<AssetSummary> 
   return r.json()
 }
 
+export interface AssetsListResponse {
+  count: number
+  results: AssetSummary[]
+  page: number
+  page_size: number
+}
+
 export async function getAssets(params?: {
   intake_batch?: string
   work_order?: string
@@ -790,7 +797,11 @@ export async function getAssets(params?: {
   created_before?: string
   /** When true, only return assets not assigned to any shipment. */
   not_in_shipment?: boolean
-}): Promise<AssetSummary[]> {
+  page?: number
+  page_size?: number
+  /** Server-side search (ID, serial, model, customer, intake user). */
+  search?: string
+}): Promise<AssetsListResponse> {
   const q = new URLSearchParams()
   if (params?.intake_batch) q.set('intake_batch', params.intake_batch)
   if (params?.work_order) q.set('work_order', params.work_order)
@@ -800,6 +811,9 @@ export async function getAssets(params?: {
   if (params?.created_after) q.set('created_after', params.created_after)
   if (params?.created_before) q.set('created_before', params.created_before)
   if (params?.not_in_shipment) q.set('not_in_shipment', '1')
+  if (params?.page != null) q.set('page', String(params.page))
+  if (params?.page_size != null) q.set('page_size', String(params.page_size))
+  if (params?.search != null && params.search !== '') q.set('search', params.search)
   const suffix = q.toString() ? '?' + q.toString() : ''
   const r = await request(`/assets/${suffix}`)
   if (!r.ok) throw new Error('Failed to get assets')
@@ -950,12 +964,15 @@ export interface WorkOrderSummary {
 
 export interface ShipmentSummary {
   id: string
+  status: 'DRAFT' | 'SHIPPED'
   work_order: string | null
   carrier: string
   tracking_number: string
-  shipped_at: string
+  shipped_at: string | null
   destination_type: string
   notes: string
+  completed_by: string | null
+  completed_by_username: string | null
 }
 
 export interface ShipmentListSummary extends ShipmentSummary {
@@ -1090,6 +1107,23 @@ export async function updateShipment(id: string, data: { carrier?: string; track
     body: JSON.stringify(data),
   })
   if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+
+/** Mark shipment as completed (shipped). Locks the shipment; records who closed it. Returns updated detail. */
+export async function markShipmentCompleted(id: string): Promise<ShipmentDetail> {
+  const r = await request(`/shipments/${id}/mark-completed/`, { method: 'POST' })
+  if (!r.ok) {
+    const text = await r.text()
+    let msg = text
+    try {
+      const j = JSON.parse(text)
+      if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)
+    } catch {
+      // use text
+    }
+    throw new Error(msg)
+  }
   return r.json()
 }
 
@@ -1414,11 +1448,39 @@ export const AUDIT_EVENT_TYPE_DISPLAY: Record<string, string> = {
   WORK_ORDER_COMPLETED: 'Work order completed',
   WORK_ORDER_CANCELLED: 'Work order cancelled',
   WORK_ORDER_CONFIRMED: 'Work order confirmed',
+  SHIPMENT_CREATED: 'Shipment created',
+  SHIPMENT_COMPLETED: 'Shipment completed (shipped)',
   UNKNOWN: 'System event',
 }
 
 export function getEventTypeDisplay(eventType: string): string {
   return AUDIT_EVENT_TYPE_DISPLAY[eventType] ?? eventType.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+/** Human-readable label for a location code (e.g. WIPE_STATION → "Wipe Station"). */
+export function getLocationLabel(locationCode: string): string {
+  if (!locationCode) return locationCode
+  const found = ASSET_LOCATIONS.find((x) => x.value === locationCode)
+  return found ? found.label : locationCode.replace(/_/g, ' ')
+}
+
+/**
+ * Rich display text for an audit event. For CUSTODY_TRANSFER includes from/to location
+ * so the history is auditable and readable (e.g. "Custody Transfer (Dirty Cage to Wipe Station)").
+ */
+export function getAuditEventDisplayText(ev: { event_type: string; old_value?: unknown; new_value?: unknown }): string {
+  const base = getEventTypeDisplay(ev.event_type)
+  if (ev.event_type !== 'CUSTODY_TRANSFER') return base
+  const ov = ev.old_value as { location?: string } | null | undefined
+  const nv = ev.new_value as { location?: string } | null | undefined
+  const fromLoc = ov?.location
+  const toLoc = nv?.location
+  if (fromLoc != null && toLoc != null) {
+    return `Custody Transfer (${getLocationLabel(fromLoc)} → ${getLocationLabel(toLoc)})`
+  }
+  if (toLoc != null) return `Custody Transfer (→ ${getLocationLabel(toLoc)})`
+  if (fromLoc != null) return `Custody Transfer (${getLocationLabel(fromLoc)} → ?)`
+  return base
 }
 
 /** Map intake request status to customer-facing display. Use for Summary "Current status" and history. */
@@ -1457,6 +1519,8 @@ export function getIntakeRequestStatusDisplay(r: {
 export interface AuditEventSummary {
   id: string
   asset_id: string | null
+  work_order_id?: string | null
+  shipment_id?: string | null
   event_type: string
   old_value: unknown
   new_value: unknown
@@ -1466,10 +1530,32 @@ export interface AuditEventSummary {
   event_hash: string
 }
 
-export async function getAuditEvents(params?: { asset_id?: string; event_type?: string }): Promise<AuditEventSummary[]> {
+export interface AuditEventsResponse {
+  count: number
+  results: AuditEventSummary[]
+  page: number
+  page_size: number
+}
+
+export async function getAuditEvents(params?: {
+  asset_id?: string
+  event_type?: string
+  timestamp_after?: string
+  timestamp_before?: string
+  user_id?: string
+  user?: string
+  page?: number
+  page_size?: number
+}): Promise<AuditEventsResponse> {
   const q = new URLSearchParams()
   if (params?.asset_id) q.set('asset_id', params.asset_id)
   if (params?.event_type) q.set('event_type', params.event_type)
+  if (params?.timestamp_after) q.set('timestamp_after', params.timestamp_after)
+  if (params?.timestamp_before) q.set('timestamp_before', params.timestamp_before)
+  if (params?.user_id) q.set('user_id', params.user_id)
+  if (params?.user != null && params.user !== '') q.set('user', params.user)
+  if (params?.page != null) q.set('page', String(params.page))
+  if (params?.page_size != null) q.set('page_size', String(params.page_size))
   const suffix = q.toString() ? '?' + q.toString() : ''
   const r = await request(`/audit-events/${suffix}`)
   if (!r.ok) throw new Error('Failed to get audit events')
