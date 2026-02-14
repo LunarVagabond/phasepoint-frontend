@@ -1,12 +1,12 @@
 <template>
-  <header class="site-header">
+  <header ref="headerRef" class="site-header">
     <router-link to="/employee-portal" class="brand">Phasepoint</router-link>
     <h1 class="page-title">{{ pageTitle }}</h1>
     <nav class="nav nav-right">
       <router-link to="/employee-portal" exact-active-class="active">Dashboard</router-link>
       <span class="nav-sep" aria-hidden="true">|</span>
-      <details ref="operationsDropdownRef" class="menu-dropdown" :class="{ active: isOperationsActive }">
-        <summary>Operations</summary>
+      <details class="menu-dropdown" :class="{ active: isOperationsActive }" :open="openDropdown === 'operations'">
+        <summary @click.prevent="toggleDropdown('operations')">Operations</summary>
         <div class="menu-list">
           <router-link v-if="!policyOnly" to="/employee-portal/intake" active-class="active">Intake</router-link>
           <a v-else href="#" class="disabled" @click.prevent>Intake</a>
@@ -21,8 +21,8 @@
         </div>
       </details>
       <span class="nav-sep" aria-hidden="true">|</span>
-      <details ref="reportsDropdownRef" class="menu-dropdown" :class="{ active: isReportsAuditActive }">
-        <summary>Reports &amp; Audit</summary>
+      <details class="menu-dropdown" :class="{ active: isReportsAuditActive }" :open="openDropdown === 'reports'">
+        <summary @click.prevent="toggleDropdown('reports')">Reports &amp; Audit</summary>
         <div class="menu-list">
           <router-link v-if="!policyOnly" to="/employee-portal/reports" active-class="active">Reports</router-link>
           <a v-else href="#" class="disabled" @click.prevent>Reports</a>
@@ -31,8 +31,8 @@
         </div>
       </details>
       <span class="nav-sep" aria-hidden="true">|</span>
-      <details ref="docsDropdownRef" class="menu-dropdown" :class="{ active: isDocsActive }">
-        <summary>Docs</summary>
+      <details class="menu-dropdown" :class="{ active: isDocsActive }" :open="openDropdown === 'docs'">
+        <summary @click.prevent="toggleDropdown('docs')">Docs</summary>
         <div class="menu-list">
           <router-link :to="{ name: 'AllPolicies' }" active-class="active">Policies</router-link>
           <router-link :to="{ name: 'Procedures' }" active-class="active">Processes and Procedures</router-link>
@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, ref, onMounted, watch, type Ref } from 'vue'
+import { computed, inject, ref, onMounted, onUnmounted, watch, type Ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 defineProps<{
@@ -77,9 +77,21 @@ defineProps<{
 }>()
 
 const route = useRoute()
-const operationsDropdownRef = ref<HTMLDetailsElement | null>(null)
-const reportsDropdownRef = ref<HTMLDetailsElement | null>(null)
-const docsDropdownRef = ref<HTMLDetailsElement | null>(null)
+const headerRef = ref<HTMLElement | null>(null)
+type DropdownId = 'operations' | 'reports' | 'docs'
+const openDropdown = ref<DropdownId | null>(null)
+
+function toggleDropdown(id: DropdownId) {
+  openDropdown.value = openDropdown.value === id ? null : id
+}
+
+function closeAllDropdowns() {
+  openDropdown.value = null
+}
+
+function onDocumentClick(e: MouseEvent) {
+  if (headerRef.value && !headerRef.value.contains(e.target as Node)) closeAllDropdowns()
+}
 
 const pageTitleRef = inject<Ref<string>>('pageTitle', ref(''))
 const pageTitle = computed(() => pageTitleRef.value || (route.meta.title as string) || '')
@@ -88,11 +100,7 @@ const theme = ref<'light' | 'dark'>('light')
 
 watch(
   () => route.path,
-  () => {
-    operationsDropdownRef.value && (operationsDropdownRef.value.open = false)
-    reportsDropdownRef.value && (reportsDropdownRef.value.open = false)
-    docsDropdownRef.value && (docsDropdownRef.value.open = false)
-  }
+  () => { openDropdown.value = null }
 )
 
 const isOperationsActive = computed(() => {
@@ -135,6 +143,11 @@ function toggleTheme() {
 onMounted(() => {
   const initialTheme = getTheme()
   setTheme(initialTheme)
+  document.addEventListener('click', onDocumentClick)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', onDocumentClick)
 })
 
 function logout() {

@@ -18,114 +18,114 @@
       </div>
     </header>
     <p v-if="downloadError" class="reports-error">{{ downloadError }}</p>
-    <section class="reports-grid">
-      <article class="report-card">
-        <h2 class="report-card-title">Asset disposition</h2>
-        <p class="report-card-desc">
-          Summary of all assets and their current disposition status (received, sanitized, destroyed, released).
-        </p>
-        <button type="button" class="report-download" @click="download('reports/asset-disposition/', 'asset_disposition')">
-          Download CSV
-        </button>
-      </article>
-      <article class="report-card">
-        <h2 class="report-card-title">Certificate of destruction</h2>
-        <p class="report-card-desc">
-          Evidence of destruction for assets that have been physically destroyed, suitable for compliance records.
-        </p>
-        <button type="button" class="report-download" @click="download('reports/certificate-of-destruction/', 'certificate_of_destruction')">
-          Download CSV
-        </button>
-        <button type="button" class="report-download" @click="downloadPdf('reports/certificate-of-destruction/pdf', 'certificate_of_destruction')">
-          Download PDF
-        </button>
-      </article>
-      <article class="report-card">
-        <h2 class="report-card-title">Chain of custody</h2>
-        <p class="report-card-desc">
-          Audit events for a single asset. Provide asset_id in URL for PDF (e.g. ?asset_id=...).
-        </p>
-        <button type="button" class="report-download" @click="downloadPdf('reports/chain-of-custody/pdf', 'chain_of_custody')">
-          Download PDF (requires asset_id)
-        </button>
-      </article>
-      <article class="report-card">
-        <h2 class="report-card-title">User action logs</h2>
-        <p class="report-card-desc">
-          Audit trail of user actions (intake, custody, sanitization) for traceability and certification.
-        </p>
-        <button type="button" class="report-download" @click="download('reports/user-action-logs/', 'user_action_logs')">
-          Download CSV
-        </button>
-      </article>
-      <article class="report-card">
-        <h2 class="report-card-title">KPI dashboard export</h2>
-        <p class="report-card-desc">
-          Assets processed by employee, stage distribution, sustainability totals, and open workflow alerts.
-        </p>
-        <button type="button" class="report-download" @click="download('reports/kpis/', 'kpi_report')">
-          Download CSV
-        </button>
-        <button type="button" class="report-download" @click="downloadPdf('kpi-pdf', 'kpi_report')">
-          Download KPI PDF
-        </button>
-      </article>
-      <article class="report-card">
-        <h2 class="report-card-title">Audit events</h2>
-        <p class="report-card-desc">
-          Full audit event export (same data as user action logs) for compliance and external systems.
-        </p>
-        <button type="button" class="report-download" @click="download('reports/audit-events/', 'audit_events')">
-          Download CSV
-        </button>
-      </article>
-      <article class="report-card">
-        <h2 class="report-card-title">Audit summary</h2>
-        <p class="report-card-desc">
-          Counts by event type and by user; optional customer and date range.
-        </p>
-        <button type="button" class="report-download" @click="download('reports/audit-summary/', 'audit_summary')">
-          Download CSV
-        </button>
-      </article>
-      <article class="report-card">
-        <h2 class="report-card-title">Shipments</h2>
-        <p class="report-card-desc">
-          List of shipments (work order, carrier, tracking, shipped_at, destination type).
-        </p>
-        <button type="button" class="report-download" @click="download('reports/shipments/', 'shipments')">
-          Download CSV
-        </button>
-      </article>
-    </section>
+    <div class="reports-table-wrap">
+      <table class="reports-table">
+        <thead>
+          <tr>
+            <th class="reports-table-name">Name</th>
+            <th class="reports-table-summary">Summary</th>
+            <th class="reports-table-input">Input required</th>
+            <th class="reports-table-csv">Download CSV</th>
+            <th class="reports-table-pdf">Download PDF</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="report in reports" :key="report.id" class="reports-table-row">
+            <td class="reports-table-name">{{ report.name }}</td>
+            <td class="reports-table-summary">{{ report.summary }}</td>
+            <td class="reports-table-input">
+              <template v-if="report.inputRequired === 'asset_id'">
+                <input
+                  v-model="reportInputs[report.id]"
+                  type="text"
+                  class="reports-table-input-field"
+                  placeholder="e.g. asset UUID"
+                  :aria-label="`Asset ID for ${report.name}`"
+                />
+              </template>
+              <span v-else class="reports-table-input-none">—</span>
+            </td>
+            <td class="reports-table-csv">
+              <button
+                v-if="report.csvPath"
+                type="button"
+                class="report-download report-download-sm"
+                :disabled="report.inputRequired && !reportInputs[report.id]"
+                @click="download(report.csvPath!, report.csvName!, report)"
+              >
+                Download CSV
+              </button>
+              <span v-else class="reports-table-empty">—</span>
+            </td>
+            <td class="reports-table-pdf">
+              <button
+                v-if="report.pdfPath"
+                type="button"
+                class="report-download report-download-sm"
+                :disabled="report.inputRequired && !reportInputs[report.id]"
+                @click="downloadPdf(report.pdfPath!, report.pdfName!, report)"
+              >
+                Download PDF
+              </button>
+              <span v-else class="reports-table-empty">—</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { request, getCustomers } from '../api'
 import type { CustomerSummary } from '../api'
+
+interface ReportRow {
+  id: string
+  name: string
+  summary: string
+  inputRequired?: 'asset_id'
+  csvPath?: string
+  csvName?: string
+  pdfPath?: string
+  pdfName?: string
+}
+
+const reports: ReportRow[] = [
+  { id: 'asset-disposition', name: 'Asset disposition', summary: 'Summary of all assets and their current disposition status (received, sanitized, destroyed, released).', csvPath: 'reports/asset-disposition/', csvName: 'asset_disposition' },
+  { id: 'certificate-of-destruction', name: 'Certificate of destruction', summary: 'Evidence of destruction for assets that have been physically destroyed, suitable for compliance records.', csvPath: 'reports/certificate-of-destruction/', csvName: 'certificate_of_destruction', pdfPath: 'reports/certificate-of-destruction/', pdfName: 'certificate_of_destruction' },
+  { id: 'chain-of-custody', name: 'Chain of custody', summary: 'Audit events for a single asset. Enter an asset ID to download CSV or PDF.', inputRequired: 'asset_id', csvPath: 'reports/chain-of-custody/', csvName: 'chain_of_custody', pdfPath: 'reports/chain-of-custody/', pdfName: 'chain_of_custody' },
+  { id: 'user-action-logs', name: 'User action logs', summary: 'Audit trail of user actions (intake, custody, sanitization) for traceability and certification.', csvPath: 'reports/user-action-logs/', csvName: 'user_action_logs' },
+  { id: 'kpi-dashboard', name: 'KPI dashboard export', summary: 'Assets processed by employee, stage distribution, sustainability totals, and open workflow alerts.', csvPath: 'reports/kpis/', csvName: 'kpi_report', pdfPath: 'kpi-pdf', pdfName: 'kpi_report' },
+  { id: 'audit-events', name: 'Audit events', summary: 'Full audit event export (same data as user action logs) for compliance and external systems.', csvPath: 'reports/audit-events/', csvName: 'audit_events' },
+  { id: 'audit-summary', name: 'Audit summary', summary: 'Counts by event type and by user; optional customer and date range.', csvPath: 'reports/audit-summary/', csvName: 'audit_summary' },
+  { id: 'shipments', name: 'Shipments', summary: 'List of shipments (work order, carrier, tracking, shipped_at, destination type).', csvPath: 'reports/shipments/', csvName: 'shipments' },
+]
 
 const downloadError = ref('')
 const customers = ref<CustomerSummary[]>([])
 const selectedCustomerId = ref('')
 const createdAfter = ref('')
 const createdBefore = ref('')
+const reportInputs = reactive<Record<string, string>>({})
 
-function reportQueryString(): string {
+function reportQueryString(assetId?: string): string {
   const params = new URLSearchParams()
   params.set('format', 'csv')
   if (selectedCustomerId.value) params.set('customer_id', selectedCustomerId.value)
   if (createdAfter.value) params.set('created_after', createdAfter.value + 'T00:00:00Z')
   if (createdBefore.value) params.set('created_before', createdBefore.value + 'T23:59:59Z')
+  if (assetId) params.set('asset_id', assetId)
   return params.toString()
 }
 
-function reportQueryStringForPdf(): string {
+function reportQueryStringForPdf(assetId?: string): string {
   const params = new URLSearchParams()
   if (selectedCustomerId.value) params.set('customer_id', selectedCustomerId.value)
   if (createdAfter.value) params.set('created_after', createdAfter.value + 'T00:00:00Z')
   if (createdBefore.value) params.set('created_before', createdBefore.value + 'T23:59:59Z')
+  if (assetId) params.set('asset_id', assetId)
   return params.toString()
 }
 
@@ -148,10 +148,12 @@ onMounted(async () => {
   }
 })
 
-async function download(path: string, name: string) {
+async function download(path: string, name: string, report: ReportRow) {
+  const assetId = report.inputRequired === 'asset_id' ? reportInputs[report.id] : undefined
+  if (report.inputRequired === 'asset_id' && !assetId) return
   downloadError.value = ''
   const pathNorm = path.startsWith('/') ? path : `/${path}`
-  const qs = reportQueryString()
+  const qs = reportQueryString(assetId)
   const url = qs ? `${pathNorm}?${qs}` : `${pathNorm}?format=csv`
   try {
     const r = await request(url)
@@ -176,13 +178,14 @@ async function download(path: string, name: string) {
   }
 }
 
-async function downloadPdf(path: string, name: string) {
+async function downloadPdf(path: string, name: string, report: ReportRow) {
+  const assetId = report.inputRequired === 'asset_id' ? reportInputs[report.id] : undefined
+  if (report.inputRequired === 'asset_id' && !assetId) return
   downloadError.value = ''
   const pathNorm = path.startsWith('/') ? path : `/${path}`
-  const qs = reportQueryStringForPdf()
-  const needFormat = pathNorm.includes('kpi')
+  const qs = reportQueryStringForPdf(assetId)
   const sep = pathNorm.includes('?') ? '&' : '?'
-  const url = qs ? `${pathNorm}?${qs}${needFormat ? '&format=pdf' : ''}` : `${pathNorm}${sep}format=pdf`
+  const url = qs ? `${pathNorm}?${qs}&format=pdf` : `${pathNorm}${sep}format=pdf`
   try {
     const r = await request(url)
     if (!r.ok) {
@@ -215,6 +218,5 @@ async function downloadPdf(path: string, name: string) {
 </script>
 
 <style scoped>
-/* Filter and card styles come from src/styles/views/_reports.scss */
+/* Filter and table styles come from src/styles/views/_reports.scss */
 </style>
-
