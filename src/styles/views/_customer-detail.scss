@@ -104,8 +104,19 @@
   margin-top: $space-3;
 }
 
-.notes-actions {
-  margin-top: $space-3;
+.notes-status {
+  min-height: 1.75rem;
+  margin-top: $space-2;
+}
+
+.notes-status .save-hint,
+.notes-status .modal-error {
+  margin: 0;
+  font-size: $font-size-sm;
+}
+
+.notes-status .modal-error {
+  color: var(--color-error);
 }
 
 .text-muted {

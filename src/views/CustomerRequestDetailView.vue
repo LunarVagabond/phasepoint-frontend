@@ -42,7 +42,7 @@
           <dd class="notes">{{ request.notes || '—' }}</dd>
         </dl>
 
-        <template v-if="request.items && request.items.length > 0">
+        <template v-if="isEmployeeView && request.items && request.items.length > 0">
           <hr class="summary-divider" />
           <h4 class="items-table-heading">Requested items</h4>
           <div class="items-table-wrap">
@@ -154,7 +154,7 @@
             <label class="field-label" for="detail-dropoff-preferred">Preferred date & time</label>
             <input id="detail-dropoff-preferred" v-model="dropOffPreferredAt" type="datetime-local" class="text-input" />
           </div>
-          <button type="button" class="btn-primary" :disabled="savingDropoff" @click="saveDropoff">
+          <button type="button" class="btn-primary dropoff-save-btn" :disabled="savingDropoff" @click="saveDropoff">
             {{ savingDropoff ? 'Saving…' : 'Save drop-off window' }}
           </button>
           <p v-if="dropoffError" class="inline-error">{{ dropoffError }}</p>
@@ -757,6 +757,17 @@ onMounted(() => {
   margin-top: $space-4;
   padding-top: $space-3;
   border-top: 1px solid var(--color-border);
+  display: grid;
+  gap: $space-3;
+}
+
+.dropoff-editor > div {
+  display: grid;
+  gap: $space-2;
+}
+
+.dropoff-save-btn {
+  margin-top: $space-2;
 }
 .inline-error {
   margin: $space-1 0 0;

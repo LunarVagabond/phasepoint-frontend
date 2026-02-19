@@ -160,19 +160,13 @@
             class="text-input textarea-input"
             placeholder="Internal notes…"
             rows="4"
+            @blur="saveCustomerNotes"
           />
         </div>
-        <div class="notes-actions">
-          <button
-            type="button"
-            class="btn-primary"
-            :disabled="savingCustomerNotes"
-            @click.stop="saveCustomerNotes"
-          >
-            {{ savingCustomerNotes ? 'Saving…' : 'Save notes' }}
-          </button>
+        <div class="notes-status">
+          <p v-if="savingCustomerNotes" class="save-hint">Saving…</p>
+          <p v-else-if="notesSaveError" class="modal-error">{{ notesSaveError }}</p>
         </div>
-        <p v-if="notesSaveError" class="modal-error">{{ notesSaveError }}</p>
       </section>
 
       <section class="customer-users-section">
@@ -218,11 +212,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getCustomerContext, getCustomers, updateCustomer, getMe } from '../api'
 import DataTable from '../components/DataTable.vue'
+import { useNotifications } from '../composables/useNotifications'
 import type { CustomerSummary, UserSummary, MeResponse } from '../api'
 import type { DataTableColumn } from '../components/DataTable.vue'
 
 const route = useRoute()
 const customerId = computed(() => String(route.params.customerId || ''))
+const { success: showSuccess } = useNotifications()
 
 const loading = ref(true)
 const customer = ref<CustomerSummary | null>(null)
@@ -393,11 +389,17 @@ async function saveCustomerInfo() {
 
 async function saveCustomerNotes() {
   if (!customer.value) return
+  // Only save if notes have actually changed
+  const currentNotes = customer.value.notes || ''
+  const newNotes = editCustomerNotes.value.trim()
+  if (currentNotes === newNotes) return
+  
   notesSaveError.value = ''
   savingCustomerNotes.value = true
   try {
     const updated = await updateCustomer(customer.value.id, { notes: editCustomerNotes.value })
     customer.value = updated
+    showSuccess('Internal notes saved successfully')
   } catch (e) {
     notesSaveError.value = e instanceof Error ? e.message : 'Failed to save notes.'
   } finally {

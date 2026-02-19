@@ -263,17 +263,19 @@
       </div>
     </div>
 
-    <div v-if="detailAssetId" class="modal-backdrop" @click.self="closeDetail">
-      <div class="modal asset-detail-modal" @click.stop>
+    <div v-if="detailAssetId" class="drawer-backdrop">
+      <div class="drawer asset-detail-drawer" :style="{ top: `${headerHeight}px`, height: `calc(100vh - ${headerHeight}px)` }">
         <template v-if="detailLoading">
           <p class="modal-loading">Loading…</p>
         </template>
         <template v-else-if="detailAsset">
-          <div class="modal-head">
-            <h2 class="modal-title">{{ formatAssetId(detailAsset.id, true) }}</h2>
-            <button type="button" class="modal-close" aria-label="Close" @click="closeDetail">×</button>
+          <div class="drawer-head">
+            <h2 class="drawer-title">Asset: {{ formatAssetId(detailAsset.id, true) }}</h2>
+            <button type="button" class="drawer-close" aria-label="Close" @click="closeDetail">×</button>
           </div>
-          <div class="detail-grid">
+          <div class="drawer-content">
+          <section class="detail-section detail-section--asset-info">
+            <div class="detail-grid">
             <div class="detail-item">
               <span class="detail-label">Manufacturer / Model</span>
               <template v-if="!(detailAsset.manufacturer_model || '').trim()">
@@ -333,9 +335,10 @@
                 <template v-else>—</template>
               </span>
             </div>
-          </div>
+            </div>
+          </section>
 
-          <section v-if="detailAsset.location === 'WIPE_STATION'" class="detail-section">
+          <section v-if="detailAsset.location === 'WIPE_STATION'" class="detail-section detail-section--sanitization">
             <h3 class="detail-section-title">Sanitization result</h3>
             <p class="detail-section-desc">Record the wipe result. Pass → Clean Cage; Fail → Destruction.</p>
             <div class="request-form sanitization-form">
@@ -366,7 +369,7 @@
 
           <section
             v-if="canSaveSerialModel"
-            class="detail-section"
+            class="detail-section detail-section--serial-model"
           >
             <h3 class="detail-section-title">Set serial / model</h3>
             <p class="detail-section-desc">You can set empty fields once. After saving, they are locked; a manager can correct via an incident.</p>
@@ -383,7 +386,7 @@
             <p v-if="serialModelSaveError" class="inline-error">{{ serialModelSaveError }}</p>
           </section>
 
-          <section v-if="isManager" class="detail-section">
+          <section v-if="isManager" class="detail-section detail-section--manager">
             <h3 class="detail-section-title">Correction incidents (manager)</h3>
             <p class="detail-section-desc">Open an incident to authorize a serial/model correction, then update the asset.</p>
             <div class="form-row">
@@ -432,7 +435,7 @@
             </template>
           </section>
 
-          <section class="detail-section">
+          <section class="detail-section detail-section--notes">
             <h3 class="detail-section-title">Notes</h3>
             <div class="notes-form" :class="{ 'notes-form--saved': notesShowSavedFlash }">
               <div class="form-row">
@@ -458,7 +461,7 @@
             </div>
           </section>
 
-          <section class="detail-section">
+          <section class="detail-section detail-section--history">
             <h3 class="detail-section-title">History (audit log)</h3>
             <ul v-if="assetAuditEvents.length" class="request-list">
               <li v-for="ev in assetAuditEvents" :key="ev.id" class="request-item">
@@ -469,14 +472,12 @@
             <p v-else-if="!detailLoading" class="modal-muted">No audit events for this asset.</p>
             <p v-else class="modal-muted">Loading…</p>
           </section>
-
-          <div class="modal-actions">
-            <button type="button" class="btn-secondary" @click="closeDetail">Close</button>
           </div>
         </template>
         <template v-else>
-          <p class="modal-muted">Asset not found.</p>
-          <button type="button" class="btn-secondary" @click="closeDetail">Close</button>
+          <div class="drawer-content">
+            <p class="modal-muted">Asset not found.</p>
+          </div>
         </template>
       </div>
     </div>
@@ -525,7 +526,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatAssetId } from '../utils/format'
 import {
@@ -557,6 +558,16 @@ import { useNotifications } from '../composables/useNotifications'
 const route = useRoute()
 const router = useRouter()
 const { success: showSuccess, error: showError } = useNotifications()
+
+const headerHeight = ref(0)
+
+function updateHeaderHeight() {
+  if (typeof document === 'undefined') return
+  const header = document.querySelector('.public-site-header, .site-header') as HTMLElement
+  if (header) {
+    headerHeight.value = header.offsetHeight
+  }
+}
 
 const assetColumns: DataTableColumn[] = [
   { key: 'id', label: 'ID', type: 'strong', formatter: (val: unknown) => formatAssetId(String(val)) },
@@ -1220,7 +1231,22 @@ async function submitBulkMove() {
   }
 }
 
+let headerObserver: MutationObserver | null = null
+
 onMounted(async () => {
+  // Calculate header height
+  updateHeaderHeight()
+  window.addEventListener('resize', updateHeaderHeight)
+  
+  // Watch for header changes (e.g., mobile menu open/close)
+  headerObserver = new MutationObserver(() => {
+    updateHeaderHeight()
+  })
+  const header = document.querySelector('.public-site-header, .site-header')
+  if (header) {
+    headerObserver.observe(header, { attributes: true, childList: true, subtree: true })
+  }
+
   // Pre-fill search from URL (e.g. from shipment asset link: ?asset=uuid&search=ASSET-0046)
   const searchFromRoute = route.query.search
   if (searchFromRoute != null && searchFromRoute !== '') {
@@ -1249,6 +1275,13 @@ onMounted(async () => {
   }
 
   load()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateHeaderHeight)
+  if (headerObserver) {
+    headerObserver.disconnect()
+  }
 })
 </script>
 

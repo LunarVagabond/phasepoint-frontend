@@ -675,14 +675,36 @@ async function load() {
     const authStore = useAuthStore()
     const cacheStore = useApiCacheStore()
     
-    const [employeeList, groupList, meRes] = await Promise.all([
-      cacheStore.fetchUsersByType('EMPLOYEE'),
-      cacheStore.fetchGroups(),
-      authStore.fetchUser(),
-    ])
-    employeeUsers.value = employeeList
-    groups.value = groupList
-    me.value = meRes
+    // Load user info first to check permissions
+    me.value = await authStore.fetchUser()
+    
+    // Only fetch employee list if user can see employees (manager group)
+    // Customer relations employees don't need to see the employee list
+    if (showEmployees.value) {
+      try {
+        const employeeList = await cacheStore.fetchUsersByType('EMPLOYEE')
+        employeeUsers.value = employeeList
+      } catch (error) {
+        // If employee list fetch fails, set empty array
+        console.warn('Failed to load employees:', error)
+        employeeUsers.value = []
+      }
+      
+      // Also fetch groups for the edit employee modal
+      try {
+        const groupList = await cacheStore.fetchGroups()
+        groups.value = groupList
+      } catch (error) {
+        // If groups fetch fails (e.g., user doesn't have permission), 
+        // set empty array - edit modal will show a message
+        console.warn('Failed to load groups:', error)
+        groups.value = []
+      }
+    } else {
+      // User can't see employees, so don't fetch employee list or groups
+      employeeUsers.value = []
+      groups.value = []
+    }
   } finally {
     loading.value = false
   }
