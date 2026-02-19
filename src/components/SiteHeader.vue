@@ -206,10 +206,13 @@ async function fetchPendingStatusCount() {
 onMounted(() => {
   document.addEventListener('click', onDocumentClick)
   if (!props.policyOnly) fetchPendingStatusCount()
+  // Listen for status request responses to update mailbox count
+  window.addEventListener('status-request-responded', fetchPendingStatusCount)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', onDocumentClick)
+  window.removeEventListener('status-request-responded', fetchPendingStatusCount)
 })
 
 function logout() {

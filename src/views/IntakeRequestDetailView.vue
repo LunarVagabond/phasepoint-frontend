@@ -161,6 +161,37 @@
         <button type="button" class="btn-primary" :disabled="savingNotes" @click="saveInternalNotes">{{ savingNotes ? 'Saving…' : 'Save note' }}</button>
       </section>
 
+      <!-- Pending Status Requests -->
+      <section v-if="pendingStatusRequests.length > 0" class="card status-requests-card">
+        <h2 class="card-title">Pending Status Requests ({{ pendingStatusRequests.length }})</h2>
+        <div v-for="sr in pendingStatusRequests" :key="sr.id" class="pending-request-item">
+          <div class="pending-request-header">
+            <span class="pending-request-meta">Requested {{ formatDate(sr.requested_at) }} by {{ sr.requested_by_username }}</span>
+          </div>
+          <div class="pending-request-form">
+            <textarea
+              v-model="statusResponses[sr.id]"
+              class="text-input textarea-input"
+              rows="2"
+              placeholder="Enter response message..."
+              :disabled="respondingToStatusRequest"
+            />
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn-primary"
+                :disabled="respondingToStatusRequest || !statusResponses[sr.id]?.trim()"
+                @click="respondToStatusRequest(sr.id)"
+              >
+                {{ respondingToStatusRequest ? 'Responding…' : 'Respond' }}
+              </button>
+            </div>
+            <p v-if="statusRequestError" class="error-inline">{{ statusRequestError }}</p>
+            <p v-if="statusRequestSuccess" class="success-inline">{{ statusRequestSuccess }}</p>
+          </div>
+        </div>
+      </section>
+
       <p class="back-link"><router-link to="/employee-portal">Back to dashboard</router-link></p>
     </template>
   </div>
@@ -173,9 +204,11 @@ import {
   getIntakeRequest,
   updateIntakeRequest,
   createStatusUpdate,
+  getStatusRequests,
+  respondToStatusRequest as respondToStatusRequestAPI,
   INTAKE_REQUEST_ASSET_TYPES,
 } from '../api'
-import type { IntakeRequestSummary } from '../api'
+import type { IntakeRequestSummary, StatusRequest } from '../api'
 
 const route = useRoute()
 const request = ref<IntakeRequestSummary | null>(null)
@@ -196,6 +229,15 @@ const savingReject = ref(false)
 const pickupDate = ref('')
 const pickupTime = ref('')
 const savingPickup = ref(false)
+const statusRequests = ref<StatusRequest[]>([])
+const statusResponses = ref<Record<string, string>>({})
+const respondingToStatusRequest = ref(false)
+const statusRequestError = ref('')
+const statusRequestSuccess = ref('')
+
+const pendingStatusRequests = computed(() => {
+  return statusRequests.value.filter(sr => !sr.is_employee_initiated && !sr.responded_at)
+})
 
 const id = computed(() => route.params.id as string)
 
@@ -230,7 +272,12 @@ async function load() {
   loading.value = true
   error.value = ''
   try {
-    request.value = await getIntakeRequest(id.value)
+    const [requestData, statusRequestsData] = await Promise.all([
+      getIntakeRequest(id.value),
+      getStatusRequests(id.value).catch(() => []),
+    ])
+    request.value = requestData
+    statusRequests.value = statusRequestsData
     editInternalNotes.value = request.value.internal_notes ?? ''
     if (request.value.pickup_scheduled_at) {
       const d = new Date(request.value.pickup_scheduled_at)
@@ -324,6 +371,33 @@ async function saveInternalNotes() {
     actionError.value = e instanceof Error ? e.message : 'Failed to save note.'
   } finally {
     savingNotes.value = false
+  }
+}
+
+async function respondToStatusRequest(statusRequestId: string) {
+  const message = statusResponses.value[statusRequestId]?.trim()
+  if (!message) return
+  
+  respondingToStatusRequest.value = true
+  statusRequestError.value = ''
+  statusRequestSuccess.value = ''
+  
+  try {
+    await respondToStatusRequestAPI(statusRequestId, message)
+    statusRequestSuccess.value = 'Response sent successfully.'
+    statusResponses.value[statusRequestId] = ''
+    // Reload status requests
+    statusRequests.value = await getStatusRequests(id.value).catch(() => [])
+    // Trigger mailbox count update in header
+    window.dispatchEvent(new CustomEvent('status-request-responded'))
+    // Clear success message after delay
+    setTimeout(() => {
+      statusRequestSuccess.value = ''
+    }, 3000)
+  } catch (e) {
+    statusRequestError.value = e instanceof Error ? e.message : 'Failed to respond to status request.'
+  } finally {
+    respondingToStatusRequest.value = false
   }
 }
 </script>

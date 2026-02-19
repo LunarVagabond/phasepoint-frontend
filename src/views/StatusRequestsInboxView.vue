@@ -25,7 +25,7 @@
           <tr v-for="sr in statusRequests" :key="sr.id" class="status-request-row">
             <td>{{ formatDate(sr.requested_at) }}</td>
             <td>
-              <router-link :to="`/employee-portal/intake`" class="request-link">
+              <router-link :to="{ name: 'IntakeRequestDetail', params: { id: sr.intake_request } }" class="request-link">
                 {{ sr.intake_request.slice(0, 8) }}…
               </router-link>
             </td>

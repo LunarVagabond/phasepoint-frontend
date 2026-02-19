@@ -13,7 +13,7 @@
     <div v-if="loading" class="card">Loading request…</div>
     <div v-else-if="error" class="card error-card">{{ error }}</div>
     <div v-else-if="request" class="detail-grid">
-      <article class="card">
+      <article ref="summaryCardRef" class="card">
         <h3>Summary</h3>
         <dl class="summary-dl">
           <dt>Request ID</dt>
@@ -161,7 +161,7 @@
         </div>
       </article>
 
-      <article class="card history-card">
+      <article ref="historyCardRef" class="card history-card">
         <h3>History</h3>
         <div class="history-content">
           <p v-if="sortedHistory.length === 0 && statusRequests.length === 0" class="empty-history">No history events recorded yet.</p>
@@ -193,14 +193,19 @@
             <template v-else-if="item.type === 'statusrequest'">
               <div class="timeline-meta">
                 <span class="time">{{ formatDate(item.timestamp) }}</span>
-                <span class="event-type">{{ (item.data as StatusRequest).is_employee_initiated ? 'Status Message From Phasepoint' : 'Status Request' }}</span>
-                <span v-if="(item.data as StatusRequest).requested_by_username" class="user">requested by {{ (item.data as StatusRequest).requested_by_username }}</span>
+                <span class="event-type">{{
+                  (item.data as StatusRequest).is_employee_initiated
+                    ? ((item.data as StatusRequest).requested_by_username
+                        ? 'Status Response'
+                        : 'Status Note')
+                    : 'Status Request'
+                }}</span>
+                <span v-if="(item.data as StatusRequest).requested_by_username && !(item.data as StatusRequest).responded_at" class="user">requested by {{ (item.data as StatusRequest).requested_by_username }}</span>
                 <span v-else-if="(item.data as StatusRequest).responded_by_username" class="user">from {{ (item.data as StatusRequest).responded_by_username }}</span>
               </div>
               <ul class="payload-readable">
                 <li v-if="!(item.data as StatusRequest).is_employee_initiated && !(item.data as StatusRequest).responded_at">Status update requested (pending response)</li>
                 <li v-if="(item.data as StatusRequest).status_message">{{ (item.data as StatusRequest).status_message }}</li>
-                <li v-if="(item.data as StatusRequest).responded_at">Responded: {{ formatDate((item.data as StatusRequest).responded_at!) }}</li>
               </ul>
             </template>
           </li>
@@ -276,7 +281,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, onUpdated, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { getIntakeRequest, getIntakeRequestHistory, getIntakeRequestAssets, getIntakeRequestWorkOrders, getEventTypeDisplay, getIntakeRequestStatusDisplay, updateIntakeRequest, createStatusRequest, createStatusUpdate, getStatusRequests, respondToStatusRequest as respondToStatusRequestAPI, INTAKE_REQUEST_ASSET_TYPES, type IntakeRequestSummary, type IntakeRequestAssetSummary, type WorkOrderSummary, type StatusRequest } from '../api'
 import { formatAssetId } from '../utils/format'
@@ -315,6 +320,15 @@ const employeeStatusUpdateError = ref('')
 const employeeStatusUpdateSuccess = ref('')
 const statusResponses = ref<Record<string, string>>({})
 const respondingToStatusRequest = ref(false)
+const summaryCardRef = ref<HTMLElement | null>(null)
+const historyCardRef = ref<HTMLElement | null>(null)
+
+function matchHistoryHeight() {
+  if (summaryCardRef.value && historyCardRef.value) {
+    const summaryHeight = summaryCardRef.value.offsetHeight
+    historyCardRef.value.style.height = `${summaryHeight}px`
+  }
+}
 
 const canEditDropoff = computed(() => !route.meta.customerPortalReadonly)
 const canRequestStatus = computed(() => {
@@ -520,6 +534,8 @@ async function respondToStatusRequest(statusRequestId: string) {
     statusResponses.value[statusRequestId] = ''
     // Reload status requests and history
     await load()
+    // Trigger mailbox count update in header
+    window.dispatchEvent(new CustomEvent('status-request-responded'))
     // Clear success message after delay
     setTimeout(() => {
       employeeStatusUpdateSuccess.value = ''
@@ -556,6 +572,22 @@ async function saveDropoff() {
 
 onMounted(() => {
   load().catch(() => {})
+  nextTick(() => {
+    matchHistoryHeight()
+    // Use ResizeObserver to update height when summary card changes
+    if (summaryCardRef.value) {
+      const observer = new ResizeObserver(() => {
+        matchHistoryHeight()
+      })
+      observer.observe(summaryCardRef.value)
+    }
+  })
+})
+
+onUpdated(() => {
+  nextTick(() => {
+    matchHistoryHeight()
+  })
 })
 </script>
 
@@ -618,7 +650,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
   gap: $space-4;
-  align-items: stretch;
+  align-items: start;
 }
 
 .detail-grid > .card {
@@ -626,9 +658,12 @@ onMounted(() => {
   flex-direction: column;
 }
 
-/* History card matches summary height (summary dictates row); history content scrolls */
+/* Summary card determines its own height naturally - no constraints */
+
+/* History card: height set dynamically to match summary, content scrolls */
 .detail-grid > .card.history-card {
-  min-height: 0;
+  min-height: 300px;
+  overflow: hidden;
 }
 
 .summary-dl {
