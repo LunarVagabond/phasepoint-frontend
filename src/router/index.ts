@@ -137,6 +137,14 @@ const routes = [
       { path: 'terms', name: 'CustomerTerms', component: () => import('../views/CustomerTermsView.vue'), meta: { title: 'Terms & Conditions', customerOnly: true } },
     ],
   },
+  // Catch-all: page not found (must be last)
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('../views/ErrorView.vue'),
+    meta: { title: 'Page not found', guest: true },
+    props: { code: 404, title: 'Page not found', message: 'The page you\'re looking for doesn\'t exist or has been moved.' },
+  },
 ]
 
 const router = createRouter({
