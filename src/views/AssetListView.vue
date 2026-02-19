@@ -98,24 +98,6 @@
         </button>
       </div>
     </div>
-    <div v-if="intakeBatchId" class="bulk-actions-bar">
-      <label class="bulk-label">Move selected to</label>
-      <select v-model="bulkMoveToLocation" class="bulk-select">
-        <option value="">— Select destination —</option>
-        <option v-for="loc in ASSET_LOCATIONS" :key="loc.value" :value="loc.value">{{ loc.label }}</option>
-      </select>
-      <button
-        type="button"
-        class="btn-primary btn-bulk-move"
-        :disabled="selectedAssetIds.size === 0 || !bulkMoveToLocation || bulkMoveSubmitting"
-        @click="submitBulkMove"
-      >
-        {{ bulkMoveSubmitting ? 'Submitting…' : 'Request move for selected' }}
-      </button>
-      <span v-if="selectedAssetIds.size" class="bulk-count">{{ selectedAssetIds.size }} selected</span>
-      <span v-if="bulkMoveError" class="error-inline">{{ bulkMoveError }}</span>
-      <span v-if="bulkMoveSuccess" class="success-inline">{{ bulkMoveSuccess }}</span>
-    </div>
     <DataTable
       :columns="assetColumns"
       :data="filteredAssets"
@@ -645,10 +627,6 @@ const hasActiveFilters = computed(() => {
 })
 
 const selectedAssetIds = ref<Set<string>>(new Set())
-const bulkMoveToLocation = ref('')
-const bulkMoveSubmitting = ref(false)
-const bulkMoveError = ref('')
-const bulkMoveSuccess = ref('')
 const sanitizationResult = ref<'PASS' | 'FAIL' | ''>('')
 const sanitizationMethod = ref('')
 const sanitizationToolUsed = ref('')
@@ -915,8 +893,6 @@ watch([intakeBatchId, workOrderId], () => {
   loading.value = true
   selectedAssetIds.value = new Set()
   assetPage.value = 1
-  bulkMoveError.value = ''
-  bulkMoveSuccess.value = ''
   if (workOrderId.value) {
     filters.workOrder = workOrderId.value
   }
@@ -1207,28 +1183,6 @@ function closeCreateWorkOrderModal() {
   workOrderForm.intended_action = 'MOVE'
   workOrderForm.notes = ''
   createWorkOrderError.value = ''
-}
-
-async function submitBulkMove() {
-  if (selectedAssetIds.value.size === 0 || !bulkMoveToLocation.value) return
-  bulkMoveSubmitting.value = true
-  bulkMoveError.value = ''
-  bulkMoveSuccess.value = ''
-  try {
-    const workOrder = await createWorkOrder({
-      asset_ids: Array.from(selectedAssetIds.value),
-      intended_action: 'MOVE',
-      notes: `Bulk move to ${bulkMoveToLocation.value}`,
-    })
-    bulkMoveSuccess.value = `Work order ${workOrder.work_order_number} created successfully!`
-    selectedAssetIds.value = new Set()
-    bulkMoveToLocation.value = ''
-    await load()
-  } catch (e) {
-    bulkMoveError.value = e instanceof Error ? e.message : 'Failed to create work order for bulk move.'
-  } finally {
-    bulkMoveSubmitting.value = false
-  }
 }
 
 let headerObserver: MutationObserver | null = null
