@@ -1,0 +1,71 @@
+@use '../variables' as *;
+
+.policy-wiki-all {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  padding-bottom: 80px; /* Space for sticky footer */
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 40px;
+}
+
+.error {
+  color: var(--color-error, #d32f2f);
+}
+
+.intro {
+  color: var(--color-text-muted, #666);
+  margin-bottom: 32px;
+}
+
+.policies-container {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.policy-section {
+  padding-bottom: 40px;
+  border-bottom: 2px solid var(--color-border, #e0e0e0);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.policy-header {
+  margin-bottom: 20px;
+}
+
+.policy-title {
+  font-size: 1.8em;
+  margin: 0 0 8px 0;
+}
+
+.policy-meta {
+  color: var(--color-text-muted, #666);
+  font-size: 0.9em;
+}
+
+.policy-content {
+  margin: 20px 0;
+}
+
+.policy-footer {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border, #e0e0e0);
+}
+
+.policy-link {
+  color: var(--color-primary, #007bff);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

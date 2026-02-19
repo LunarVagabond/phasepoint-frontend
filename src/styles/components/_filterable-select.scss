@@ -1,0 +1,149 @@
+@use '../variables' as *;
+
+.filterable-select {
+  position: relative;
+  min-width: 200px;
+
+  // When used as a filter-select, match the styling of other filter selects
+  // Reset any inherited styles from parent .filter-select class
+  &.filter-select {
+    min-width: 160px;
+    width: 100%;
+    display: block;
+    padding: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+
+    .filterable-select-trigger {
+      font-size: $font-size-sm;
+      width: 100%;
+      box-shadow: none;
+
+      &:focus,
+      &.open {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+      }
+    }
+  }
+}
+
+.filterable-select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-2;
+  padding: $space-2 $space-3;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: $font-size-base;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  margin: 0;
+  box-shadow: none;
+  outline: none;
+
+  &:focus {
+    outline: none;
+    box-shadow: none;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:hover {
+    border-color: var(--color-text-muted);
+  }
+
+  &.open {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+    outline: none;
+  }
+
+  &:not(.has-value) .trigger-label {
+    color: var(--color-text-muted);
+  }
+}
+
+.trigger-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trigger-chevron {
+  font-size: 0.65em;
+  color: var(--color-text-muted);
+}
+
+.filterable-select-dropdown {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.filterable-select-search {
+  width: 100%;
+  padding: $space-2 $space-3;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  font-size: $font-size-base;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.filterable-select-list {
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 0;
+  padding: $space-1;
+  list-style: none;
+}
+
+.filterable-select-option {
+  padding: $space-2 $space-3;
+  cursor: pointer;
+  border-radius: $radius-sm;
+  color: var(--color-text);
+
+  &:hover,
+  &.highlighted {
+    background: var(--color-bg-subtle, rgba(0 0 0 / 0.05));
+  }
+}
+
+.filterable-select-empty {
+  padding: $space-2 $space-3;
+  color: var(--color-text-muted);
+  font-size: $font-size-sm;
+}

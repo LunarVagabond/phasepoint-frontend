@@ -1,0 +1,143 @@
+// DataTable component styles
+@use '../variables' as *;
+
+.data-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-lg;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+
+  &.sticky-header {
+    max-height: min(70vh, 600px);
+    overflow-y: auto;
+    overflow-x: auto;
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--color-background);
+      box-shadow: 0 1px 0 var(--color-border);
+    }
+  }
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: $font-size-sm;
+
+  th {
+    text-align: left;
+    padding: $space-3 $space-4;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    background: var(--color-background);
+    border-bottom: 2px solid var(--color-border);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: $space-3 $space-4;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+  }
+
+  tbody tr.data-row.data-row-clickable:hover {
+    background: var(--color-row-hover);
+    transition: background-color 0.15s ease;
+  }
+
+  tbody tr.data-row-clickable {
+    cursor: pointer;
+  }
+
+  .loading-cell {
+    text-align: center;
+    color: var(--color-text-muted);
+    padding: $space-8;
+  }
+
+  // Badge styles are now in _status-badges.scss
+  // This keeps the base badge styling consistent
+
+  .selection-col {
+    width: 2.5rem;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .selection-col input {
+    cursor: pointer;
+    
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  }
+
+  tbody tr.data-row-non-selectable {
+    opacity: 0.6;
+    
+    &:hover {
+      background: inherit;
+    }
+  }
+
+  .actions-cell {
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+  }
+
+  // Style inputs in add-row to match dashboard styling
+  .add-row {
+    background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.08);
+    border-bottom: none;
+
+    td {
+      border-bottom: none;
+      padding: $space-3 $space-4;
+      vertical-align: middle;
+    }
+
+    // Inputs directly in td (like assets table) need full width
+    td > input,
+    td > select {
+      padding: $space-2 $space-3;
+      border: 1px solid var(--color-border);
+      border-radius: $radius-md;
+      background-color: var(--color-surface);
+      color: var(--color-text);
+      min-width: 120px;
+      width: 100%;
+      font-family: inherit;
+      font-size: $font-size-base;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      
+      &:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+        background-color: var(--color-surface);
+      }
+    }
+
+    td > input::placeholder {
+      color: var(--color-text-muted);
+    }
+
+    td > select {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right $space-2 center;
+      background-repeat: no-repeat;
+      background-size: 1.5em 1.5em;
+      padding-right: 2.5rem;
+    }
+  }
+}

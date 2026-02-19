@@ -1,0 +1,46 @@
+// EnvironmentBanner component styles
+@use '../variables' as *;
+
+.env-banner {
+  position: sticky;
+  z-index: 9;
+  padding: $space-2 $space-4;
+  text-align: center;
+  font-weight: 600;
+  font-size: $font-size-sm;
+  color: #000;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.env-banner--development {
+  background: #fef08a; // yellow-200
+  color: #854d0e; // yellow-800
+  border-bottom-color: rgba(133, 77, 14, 0.2);
+}
+
+.env-banner--demo {
+  background: #bfdbfe; // blue-200
+  color: #1e3a8a; // blue-800
+  border-bottom-color: rgba(30, 58, 138, 0.2);
+}
+
+.env-banner-text {
+  display: inline-block;
+}
+
+// When banner comes after a sticky header, position it below the header
+// Headers are typically around 64px tall
+.public-site-header ~ .env-banner,
+.site-header ~ .env-banner {
+  // Calculate header height dynamically - header is sticky at top: 0
+  // Banner will stick at top: 0 but appear below header due to DOM order
+  // We need to account for header height
+  top: 0;
+}
+
+// Use CSS to position banner below header when header is present
+:has(.public-site-header[style*="sticky"]) .env-banner,
+:has(.site-header[style*="sticky"]) .env-banner {
+  // If header exists and is sticky, banner should stick below it
+  // This is handled by DOM order - banner comes after header
+}

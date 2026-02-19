@@ -1,0 +1,78 @@
+@use '../variables' as *;
+
+.customer-requests-list {
+  width: 100%;
+}
+
+.page-header {
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.25rem;
+  }
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 0.875rem;
+}
+
+.loading-state,
+.error-state,
+.empty-state {
+  padding: 1.5rem;
+  text-align: center;
+  border-radius: 8px;
+  background: var(--color-bg-muted, #f9fafb);
+}
+
+.error-state {
+  color: var(--color-error, #dc2626);
+}
+
+.request-table-wrap {
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-head,
+.table-row {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1.5fr 1.5fr;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  align-items: center;
+}
+
+.table-head {
+  background: var(--color-bg-muted, #f3f4f6);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.request-row {
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--color-bg-hover, #f9fafb);
+  }
+}
+
+.col-date,
+.col-status,
+.col-items,
+.col-logistics {
+  min-width: 0;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}

@@ -1,0 +1,64 @@
+@use '../variables' as *;
+
+.users-page {
+  display: grid;
+  gap: $space-5;
+}
+
+.users-header {
+  h2 {
+    margin: 0 0 $space-2;
+  }
+
+  p {
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+}
+
+.users-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: $radius-lg;
+  padding: $space-5;
+}
+
+.add-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr auto;
+  gap: $space-2;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+input {
+  padding: $space-2 $space-3;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+}
+
+button {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: $radius-md;
+  padding: $space-2 $space-3;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    text-align: left;
+    padding: $space-2;
+    border-bottom: 1px solid var(--color-border);
+  }
+}
+
+.error {
+  color: var(--color-error);
+}

@@ -1,0 +1,89 @@
+// PolicyEditor component styles
+@use '../variables' as *;
+
+.policy-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.policy-editor .editor-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-6;
+  height: 100%;
+  min-height: 500px;
+}
+
+.policy-editor .editor-left,
+.policy-editor .editor-right {
+  display: flex;
+  flex-direction: column;
+}
+
+.policy-editor .editor-label {
+  font-weight: 600;
+  margin-bottom: $space-2;
+  font-size: 0.9em;
+  color: var(--color-text-muted);
+}
+
+.policy-editor .editor-textarea {
+  flex: 1;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  padding: $space-3;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  resize: none;
+  line-height: 1.6;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.policy-editor .editor-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.policy-editor .editor-textarea[readonly] {
+  background: var(--color-background);
+  cursor: not-allowed;
+}
+
+.policy-editor .editor-preview {
+  flex: 1;
+  padding: $space-3;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  background: var(--color-surface);
+  overflow-y: auto;
+  color: var(--color-text);
+}
+
+.policy-editor .editor-preview :deep(.markdown-body) {
+  color: var(--color-text);
+}
+
+.policy-editor .editor-preview :deep(.markdown-body h1),
+.policy-editor .editor-preview :deep(.markdown-body h2),
+.policy-editor .editor-preview :deep(.markdown-body h3),
+.policy-editor .editor-preview :deep(.markdown-body h4),
+.policy-editor .editor-preview :deep(.markdown-body h5),
+.policy-editor .editor-preview :deep(.markdown-body h6) {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.policy-editor .editor-preview :deep(.markdown-body p),
+.policy-editor .editor-preview :deep(.markdown-body li),
+.policy-editor .editor-preview :deep(.markdown-body td),
+.policy-editor .editor-preview :deep(.markdown-body th) {
+  color: var(--color-text);
+}
+
+@media (max-width: 768px) {
+  .policy-editor .editor-split {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,190 @@
+// PolicySidebar component styles
+@use '../variables' as *;
+
+.policy-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  padding: $space-4;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--color-background);
+  height: 100%;
+
+  &.policy-sidebar--left {
+    border-right: 1px solid var(--color-border);
+  }
+
+  &.policy-sidebar--right {
+    border-left: 1px solid var(--color-border);
+  }
+
+  .section {
+    margin-bottom: $space-6;
+  }
+
+  .section-title {
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 $space-3;
+  }
+}
+
+.policy-list,
+.toc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.policy-list li,
+.toc-list li {
+  margin-bottom: $space-1;
+}
+
+.policy-list a,
+.toc-link {
+  display: block;
+  padding: $space-2 0;
+  color: var(--color-text);
+  font-size: $font-size-sm;
+  text-decoration: none;
+  border-radius: $radius-md;
+  transition: background 0.15s, color 0.15s;
+}
+
+.policy-list a:hover,
+.toc-link:hover {
+  background: var(--color-border);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.policy-list a.active {
+  font-weight: 600;
+  background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+  color: var(--color-primary);
+}
+
+.toc-link {
+  display: inline-block;
+}
+
+.policy-item-all,
+.policy-item-drafts {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border, #e0e0e0);
+}
+
+.policy-link-all,
+.policy-link-drafts {
+  font-weight: bold;
+}
+
+.policy-item {
+  margin-bottom: 4px;
+}
+
+.policy-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.policy-group-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.policy-link-main {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.version-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 0.8em;
+  color: var(--color-text-muted, #666);
+  margin-left: 4px;
+}
+
+.version-list {
+  list-style: none;
+  padding-left: 16px;
+  margin-top: 4px;
+}
+
+.version-link {
+  display: block;
+  padding: 2px 0;
+  font-size: 0.9em;
+  color: var(--color-text-muted, #666);
+}
+
+.version-link.active,
+.version-link.version-current {
+  font-weight: bold;
+  color: inherit;
+}
+
+.policy-item-separator,
+.toc-item-separator {
+  margin-top: 16px;
+  padding-top: 16px;
+}
+
+.separator {
+  height: 1px;
+  background: var(--color-border);
+  margin-bottom: 12px;
+}
+
+.policy-create-link {
+  display: block;
+  padding: 8px 0;
+  color: var(--color-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: $radius-md;
+  transition: background 0.15s, color 0.15s;
+}
+
+.policy-create-link:hover {
+  background: var(--color-border);
+  text-decoration: none;
+}
+
+.toc-edit-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  color: var(--color-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: $radius-md;
+  transition: background 0.15s, color 0.15s;
+}
+
+.toc-edit-link:hover {
+  background: var(--color-border);
+  text-decoration: none;
+}
+
+.edit-icon {
+  font-size: 1em;
+}
+
+.toc-empty-edit {
+  margin-top: 16px;
+}

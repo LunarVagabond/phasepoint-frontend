@@ -1,0 +1,113 @@
+@use '../variables' as *;
+
+.checkpoint-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+}
+
+.timeline-title {
+  margin: 0;
+  font-size: $font-size-lg;
+  font-weight: 600;
+}
+
+.timeline-container {
+  position: relative;
+  padding-left: $space-6;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--color-border);
+  }
+}
+
+.checkpoint-item {
+  position: relative;
+  margin-bottom: $space-6;
+  display: flex;
+  gap: $space-3;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.checkpoint-marker {
+  position: absolute;
+  left: -$space-6;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.checkpoint-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-sm;
+  font-weight: 600;
+  color: var(--color-text-muted);
+
+  &.current {
+    color: var(--color-primary);
+    font-size: $font-size-base;
+  }
+}
+
+.checkpoint-completed .checkpoint-icon {
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 50%;
+  font-size: $font-size-xs;
+}
+
+.checkpoint-content {
+  flex: 1;
+  padding-top: 2px;
+}
+
+.checkpoint-label {
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: $space-1;
+}
+
+.checkpoint-description {
+  font-size: $font-size-sm;
+  color: var(--color-text-muted);
+  margin-bottom: $space-1;
+}
+
+.checkpoint-timestamp {
+  font-size: $font-size-xs;
+  color: var(--color-text-muted);
+  margin-bottom: $space-1;
+}
+
+.checkpoint-user {
+  font-size: $font-size-xs;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.checkpoint-completed .checkpoint-label {
+  color: var(--color-text);
+}
+
+.checkpoint-current .checkpoint-label {
+  color: var(--color-primary);
+}

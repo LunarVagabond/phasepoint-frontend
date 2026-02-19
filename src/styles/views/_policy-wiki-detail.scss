@@ -1,0 +1,113 @@
+// PolicyWikiDetail / ProceduresWikiDetail — doc header and content area
+@use '../variables' as *;
+
+.wiki-detail {
+  max-width: 65ch;
+}
+
+// Doc header (version, effective date, owner)
+.wiki-detail .policy-header {
+  margin-bottom: $space-6;
+  padding-bottom: $space-4;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.wiki-detail .meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: $space-3;
+}
+
+.wiki-detail .meta {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: $font-size-sm;
+  line-height: 1.5;
+}
+
+.wiki-detail .version-link-inline {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-size: $font-size-sm;
+}
+
+.wiki-detail .version-link-inline:hover {
+  color: var(--color-primary);
+}
+
+// Wiki main content area — comfortable reading
+.wiki-main {
+  background: var(--color-surface);
+}
+
+.wiki-main .markdown-body {
+  max-width: 65ch;
+}
+
+// Print styles (when user prints the wiki page from the browser)
+@media print {
+  .wiki-main {
+    padding: 0;
+    background: #fff;
+    overflow: visible;
+  }
+
+  .wiki-detail {
+    max-width: none;
+  }
+
+  .wiki-detail .policy-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom-color: #333;
+  }
+
+  .wiki-detail .meta,
+  .wiki-detail .version-link-inline {
+    color: #444;
+  }
+
+  .wiki-main .markdown-body {
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #111;
+    max-width: none;
+  }
+
+  .wiki-main .markdown-body h1,
+  .wiki-main .markdown-body h2,
+  .wiki-main .markdown-body h3,
+  .wiki-main .markdown-body h4,
+  .wiki-main .markdown-body h5,
+  .wiki-main .markdown-body h6 {
+    color: #111;
+    page-break-after: avoid;
+  }
+
+  .wiki-main .markdown-body p,
+  .wiki-main .markdown-body li {
+    orphans: 2;
+    widows: 2;
+  }
+
+  .wiki-main .markdown-body table {
+    page-break-inside: avoid;
+  }
+
+  .wiki-main .markdown-body pre {
+    page-break-inside: avoid;
+    border-color: #ccc;
+    background: #f8f8f8;
+  }
+
+  .policy-print-footer,
+  .wiki-accept-footer,
+  .policy-wiki .doc-sidebar,
+  .wiki-body .doc-sidebar {
+    display: none !important;
+  }
+}

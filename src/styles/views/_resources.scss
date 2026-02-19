@@ -1,0 +1,71 @@
+@use '../variables' as *;
+
+// ResourcesView shares public page styles with AboutView
+@use 'about';
+
+// Additional resource-specific styles
+.resource-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: $space-6;
+  margin-top: $space-6;
+}
+
+.resource-item {
+  display: block;
+  position: relative;
+  padding: $space-6;
+  background: var(--color-surface);
+  border-radius: $radius-lg;
+  border: 1px solid var(--color-border);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  .external-link-icon {
+    position: absolute;
+    top: $space-4;
+    right: $space-4;
+    width: 1rem;
+    height: 1rem;
+    color: var(--color-text-muted);
+    opacity: 0.6;
+    transition: all 0.2s ease;
+  }
+
+  &:hover .external-link-icon {
+    color: var(--color-primary);
+    opacity: 1;
+  }
+
+  h3 {
+    font-size: $font-size-lg;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 $space-3;
+    transition: color 0.2s;
+  }
+
+  &:hover h3 {
+    color: var(--color-primary);
+  }
+
+  p {
+    font-size: $font-size-base;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+    margin: 0;
+  }
+}

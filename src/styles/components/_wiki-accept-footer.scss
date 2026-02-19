@@ -1,0 +1,21 @@
+// WikiAcceptFooter component styles
+@use '../variables' as *;
+
+.wiki-accept-footer .footer-actions {
+  margin-bottom: $space-4;
+}
+
+.wiki-accept-footer .print-btn {
+  padding: $space-2 $space-4;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: $radius-md;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background 0.2s;
+}
+
+.wiki-accept-footer .print-btn:hover {
+  background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.85);
+}

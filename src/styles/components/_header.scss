@@ -1,0 +1,493 @@
+// SiteHeader component styles
+@use '../variables' as *;
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: $space-6;
+  padding: $space-4 $space-6;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.site-header .brand {
+  font-weight: 600;
+  font-size: $font-size-xl;
+  color: var(--color-text);
+  text-decoration: none;
+  
+  &:hover {
+    text-decoration: none;
+    color: var(--color-primary);
+  }
+}
+
+.site-header .page-title {
+  margin: 0;
+  font-size: $font-size-lg;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: center;
+}
+
+.site-header .nav-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $space-1;
+}
+
+.site-header .nav-sep {
+  color: var(--color-border);
+  user-select: none;
+  font-size: $font-size-sm;
+}
+
+.site-header .nav a {
+  color: var(--color-primary);
+  font-size: $font-size-sm;
+  padding: $space-2 $space-3;
+  border-radius: $radius-md;
+  transition: color 0.15s, text-decoration-color 0.15s;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+
+  &.active {
+    color: var(--color-primary);
+    font-weight: 600;
+    text-decoration-color: var(--color-primary);
+  }
+
+  &:not(.disabled):hover {
+    text-decoration-color: var(--color-primary);
+  }
+
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    color: var(--color-text-muted);
+  }
+}
+
+// Dropdown menus (Operations, Reports & Audit, Docs)
+.site-header .menu-dropdown {
+  position: relative;
+}
+
+.site-header .menu-dropdown summary {
+  list-style: none;
+  cursor: pointer;
+  padding: $space-2 $space-3;
+  border-radius: $radius-md;
+  user-select: none;
+  font-size: $font-size-sm;
+  color: var(--color-primary);
+  transition: color 0.15s, text-decoration-color 0.15s;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.site-header .menu-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+
+.site-header .menu-dropdown summary:hover {
+  text-decoration-color: var(--color-primary);
+}
+
+.site-header .menu-dropdown[open] summary,
+.site-header .menu-dropdown.active summary {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration-color: var(--color-primary);
+
+  .menu-dropdown-icon {
+    transform: rotate(180deg);
+  }
+}
+
+.site-header .menu-dropdown-label {
+  flex: 0 0 auto;
+}
+
+.site-header .menu-dropdown-icon {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.site-header .menu-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.25rem);
+  min-width: 10rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1));
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+}
+
+.site-header .menu-list a {
+  padding: $space-2 $space-3;
+  border-radius: $radius-md;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  color: var(--color-primary);
+  font-size: $font-size-sm;
+  transition: color 0.15s, text-decoration-color 0.15s;
+}
+
+.site-header .menu-list a:hover:not(.disabled) {
+  text-decoration-color: var(--color-primary);
+}
+
+.site-header .menu-list a.active {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration-color: var(--color-primary);
+}
+
+.site-header .menu-list a.disabled {
+  color: #999;
+  cursor: not-allowed;
+}
+
+// Status requests: larger blue mailbox icon with blue count next to it
+.site-header .status-inbox-nav {
+  display: flex;
+  align-items: center;
+  gap: $space-1;
+  height: 2.25rem;
+  padding: $space-2 $space-3;
+  border-radius: $radius-md;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+  color: var(--color-primary);
+
+  &:hover {
+    background: var(--color-border);
+    color: var(--color-primary);
+  }
+
+  svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+  }
+}
+
+.site-header .status-inbox-count {
+  font-size: $font-size-sm;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1;
+}
+
+// Profile (cog) icon: same size as mailbox icon
+.site-header .profile-cog {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: $space-2;
+  border-radius: $radius-md;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+
+  svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
+// Theme toggle and logout: consistent button-style in nav
+.site-header .theme-toggle {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid transparent;
+  color: var(--color-text);
+  padding: $space-2;
+  border-radius: $radius-md;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  transition: background 0.15s, border-color 0.15s;
+  
+  &:hover {
+    background: var(--color-border);
+  }
+  
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+.site-header .logout {
+  color: var(--color-error);
+  font-size: $font-size-sm;
+  padding: $space-2 $space-3;
+  border-radius: $radius-md;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color 0.15s;
+
+  &:hover {
+    text-decoration-color: var(--color-error);
+  }
+}
+
+// Mobile menu toggle button
+.site-header .mobile-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  
+  &:hover {
+    background: var(--color-border);
+  }
+  
+  svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+// Mobile menu header with close button
+.site-header .mobile-menu-header {
+  display: none;
+}
+
+// Mobile responsive styles
+@media (max-width: 1023px) {
+  .site-header {
+    grid-template-columns: auto 1fr auto;
+    gap: $space-4;
+  }
+  
+  .site-header .page-title {
+    font-size: $font-size-base;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .site-header .mobile-menu-toggle {
+    display: flex;
+  }
+  
+  .site-header .mobile-menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: $space-6;
+    margin-bottom: $space-4;
+    border-bottom: 2px solid var(--color-border);
+  }
+  
+  .site-header .mobile-menu-title {
+    margin: 0;
+    font-size: $font-size-xl;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+  
+  .site-header .mobile-menu-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: $radius-md;
+    background: var(--color-surface);
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    
+    &:hover {
+      background: var(--color-border);
+    }
+    
+    svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+  }
+  
+  .site-header .nav-right {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-surface);
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: $space-6;
+    gap: $space-2;
+    z-index: 9999;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    
+    &.mobile-open {
+      transform: translateX(0);
+    }
+  }
+  
+  .site-header .nav-right > * {
+    width: 100%;
+  }
+  
+  .site-header .nav-sep {
+    display: none;
+  }
+  
+  // Mobile nav items - button-like styling
+  .site-header .nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: $space-4;
+    margin-bottom: $space-2;
+    border: 1px solid var(--color-border);
+    border-radius: $radius-md;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: $font-size-base;
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    cursor: pointer;
+    
+    &:hover {
+      background: var(--color-background);
+      border-color: var(--color-primary);
+      text-decoration: none;
+    }
+    
+    &.active {
+      background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      font-weight: 500;
+    }
+  }
+  
+  .site-header .menu-dropdown {
+    width: 100%;
+  }
+  
+  .site-header .menu-dropdown summary {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .site-header .menu-list {
+    position: static;
+    min-width: auto;
+    margin-top: $space-2;
+    margin-bottom: $space-2;
+    padding-left: $space-6;
+    padding-right: 0;
+    box-shadow: none;
+    border: none;
+    border-left: 2px solid var(--color-border);
+    gap: $space-1;
+  }
+  
+  .site-header .menu-list a {
+    display: block;
+    padding: $space-3 $space-4;
+    margin-bottom: $space-1;
+    border-radius: $radius-sm;
+    font-size: $font-size-sm;
+    transition: background 0.15s;
+    
+    &:hover:not(.disabled) {
+      background: var(--color-background);
+      text-decoration: none;
+    }
+    
+    &.active {
+      background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+      color: var(--color-primary);
+      font-weight: 500;
+    }
+  }
+  
+  .site-header .theme-toggle,
+  .site-header .profile-cog {
+    width: 100%;
+    height: auto;
+    padding: $space-4;
+    justify-content: space-between;
+    border-radius: $radius-md;
+    
+    svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+  }
+  
+  .site-header .logout {
+    width: 100%;
+    text-align: left;
+    padding: $space-4;
+    border: 1px solid var(--color-error);
+    color: var(--color-error);
+    
+    &:hover {
+      background: rgba(var(--color-error-rgb, 220, 38, 38), 0.1);
+      border-color: var(--color-error);
+      text-decoration: none;
+    }
+  }
+}
+
+@media (max-width: 767px) {
+  .site-header {
+    padding: $space-3 $space-4;
+  }
+  
+  .site-header .page-title {
+    font-size: $font-size-sm;
+  }
+  
+  .site-header .brand {
+    font-size: $font-size-lg;
+  }
+}

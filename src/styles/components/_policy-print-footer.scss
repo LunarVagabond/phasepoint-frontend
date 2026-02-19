@@ -1,0 +1,119 @@
+// PolicyPrintFooter component styles
+@use '../variables' as *;
+
+.policy-print-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  padding: $space-4 $space-6;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-4;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.print-btn {
+  padding: $space-2 $space-4;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: $radius-md;
+  font-weight: 500;
+  font-size: $font-size-sm;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.archive-btn {
+  padding: $space-2 $space-4;
+  background: transparent;
+  color: var(--color-text-muted, #666);
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover:not(:disabled) {
+    background: var(--color-border);
+    color: var(--color-text);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.delete-btn {
+  padding: $space-2 $space-3;
+  background: transparent;
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+  border-radius: $radius-md;
+  font-size: $font-size-base;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover:not(:disabled) {
+    background: var(--color-error);
+    color: white;
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.policy-print-footer .error {
+  color: var(--color-error);
+  margin: 0;
+  font-size: $font-size-sm;
+}
+
+.delete-confirm-modal {
+  max-width: 400px;
+}
+
+.modal-warning {
+  color: var(--color-error);
+  font-weight: 500;
+  margin-top: $space-2;
+}
+
+.btn-danger {
+  padding: $space-2 $space-4;
+  background: var(--color-error);
+  color: white;
+  border: none;
+  border-radius: $radius-md;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}

@@ -1,0 +1,25 @@
+// PolicyWikiLayout / DocWikiLayout — policies & procedures
+@use '../variables' as *;
+
+.policy-wiki {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.wiki-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.wiki-main {
+  flex: 1;
+  min-width: 0;
+  padding: $space-8 $space-6;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--color-surface);
+}

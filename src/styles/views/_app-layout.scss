@@ -1,0 +1,15 @@
+// AppLayout component styles
+@use '../variables' as *;
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-main {
+  flex: 1;
+  padding: $space-6;
+  overflow-y: auto;
+  background: var(--color-background);
+}

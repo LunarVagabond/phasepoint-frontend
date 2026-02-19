@@ -1,0 +1,193 @@
+@use '../variables' as *;
+
+.customer-audit-trail {
+  display: grid;
+  gap: $space-5;
+}
+
+.page-header {
+  margin-bottom: $space-2;
+
+  h2 {
+    margin: 0 0 $space-1;
+  }
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: $font-size-sm;
+}
+
+.filters-bar {
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  padding: $space-3;
+  background: var(--color-background);
+}
+
+.filters-row {
+  display: flex;
+  gap: $space-3;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+}
+
+.filter-label {
+  font-size: $font-size-sm;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.filter-select,
+.filter-input,
+.filter-date {
+  padding: $space-2 $space-3;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.filter-group-date {
+  min-width: 150px;
+}
+
+.btn-clear-filters {
+  padding: $space-2 $space-3;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  cursor: pointer;
+  font-size: $font-size-lg;
+  align-self: flex-end;
+}
+
+.loading-state,
+.error-state,
+.empty-state {
+  padding: $space-6;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.error-state {
+  color: var(--color-error);
+}
+
+.empty-hint {
+  margin-top: $space-2;
+  font-size: $font-size-sm;
+}
+
+.audit-events-list {
+  display: grid;
+  gap: $space-3;
+}
+
+.audit-event-item {
+  padding: $space-4;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  background: var(--color-surface);
+}
+
+.event-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+  margin-bottom: $space-2;
+  font-size: $font-size-sm;
+}
+
+.event-time {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.event-type {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* Highlighted audit values (e.g. Make / Model from → to) — purple gradient */
+.audit-value {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #ede9fe 0%, #c4b5fd 100%);
+  color: #5b21b6;
+}
+
+:root[data-theme='dark'] .audit-value {
+  background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 50%, #8b5cf6 100%);
+  color: #ede9fe;
+}
+
+.event-user {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.event-asset,
+.event-work-order,
+.event-shipment {
+  margin-top: $space-2;
+  font-size: $font-size-sm;
+  color: var(--color-text-muted);
+}
+
+.asset-link,
+.shipment-link {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.audit-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $space-4;
+}
+
+.pagination-info {
+  color: var(--color-text-muted);
+  font-size: $font-size-sm;
+}
+
+.pagination-buttons {
+  display: flex;
+  gap: $space-2;
+}
+
+.btn-pagination {
+  padding: $space-2 $space-3;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  cursor: pointer;
+  font-size: $font-size-sm;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@media (max-width: 900px) {
+  .filters-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-clear-filters {
+    align-self: stretch;
+  }
+}

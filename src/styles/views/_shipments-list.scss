@@ -1,0 +1,51 @@
+@use '../variables' as *;
+
+.shipments-list {
+  padding: $space-6;
+}
+
+.page-header {
+  margin-bottom: $space-6;
+
+  h1 {
+    font-size: $font-size-2xl;
+    font-weight: 600;
+    margin-bottom: $space-2;
+  }
+
+  .page-description {
+    color: var(--color-text-muted);
+    font-size: $font-size-base;
+    margin-bottom: $space-4;
+  }
+}
+
+.filters-section {
+  display: flex;
+  gap: $space-4;
+  margin-bottom: $space-4;
+  flex-wrap: wrap;
+}
+
+.filter-group label {
+  display: block;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  margin-bottom: $space-1;
+}
+
+.filter-select {
+  padding: $space-2 $space-3;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  background: var(--color-surface);
+  color: var(--color-text);
+  min-width: 180px;
+}
+
+.empty-message {
+  text-align: center;
+  padding: $space-8;
+  color: var(--color-text-muted);
+}

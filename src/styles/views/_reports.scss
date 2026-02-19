@@ -1,0 +1,292 @@
+// ReportsView component styles
+@use '../variables' as *;
+
+.reports {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.reports-header {
+  margin-bottom: $space-8;
+}
+
+.reports-search-row {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  margin-top: $space-4;
+}
+
+.reports-search-label {
+  font-size: $font-size-sm;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.reports-search-input {
+  flex: 1;
+  min-width: 0;
+  max-width: 420px;
+  padding: $space-2 $space-3;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: $font-size-base;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+  }
+}
+
+.reports-title {
+  font-size: $font-size-2xl;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 $space-3;
+}
+
+.reports-description {
+  font-size: $font-size-base;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.reports-error {
+  padding: $space-3 $space-4;
+  margin: 0 0 $space-4;
+  background: var(--color-error-bg, #fef2f2);
+  color: var(--color-error, #b91c1c);
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+}
+
+.reports-table-wrap {
+  overflow: auto;
+  max-height: min(70vh, 600px);
+  border: 1px solid var(--color-border);
+  border-radius: $radius-lg;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.reports-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: $font-size-sm;
+}
+
+.reports-table th,
+.reports-table td {
+  padding: $space-3 $space-4;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.reports-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-weight: 700;
+  font-size: $font-size-base;
+  color: var(--color-text);
+  background: var(--color-surface-elevated, var(--color-surface));
+  border-bottom: 2px solid var(--color-border);
+  white-space: nowrap;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+  text-align: center;
+  box-shadow: 0 1px 0 var(--color-border);
+}
+
+.reports-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.reports-table tbody tr.reports-table-row-clickable:hover {
+  background: var(--color-row-hover);
+  transition: background-color 0.15s ease;
+}
+
+.reports-section-row {
+  background: var(--color-surface-elevated, rgba(0, 0, 0, 0.03));
+}
+
+.reports-section-heading {
+  padding: $space-3 $space-4;
+  font-weight: 700;
+  font-size: $font-size-base;
+  color: var(--color-text);
+  border-bottom: 2px solid var(--color-border);
+  vertical-align: middle;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+}
+
+.reports-table-row-clickable {
+  cursor: pointer;
+}
+
+.reports-table-name {
+  min-width: 140px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.reports-table-summary {
+  min-width: 200px;
+  max-width: 800px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.report-download {
+  padding: $space-2 $space-4;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: $radius-md;
+  font-weight: 500;
+  font-size: $font-size-sm;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// Report modal (filters and inputs internal to each report)
+.report-modal {
+  max-width: 640px;
+}
+
+.report-modal-title {
+  margin: 0 0 $space-2;
+  font-size: $font-size-lg;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.report-modal-summary {
+  margin: 0 0 $space-4;
+  font-size: $font-size-sm;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.report-modal-hint {
+  margin: 0 0 $space-3;
+  font-size: $font-size-xs;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.report-modal-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-4;
+  margin-bottom: $space-4;
+}
+
+.report-modal-daterow {
+  display: flex;
+  align-items: flex-end;
+  gap: $space-4;
+  flex-wrap: nowrap;
+}
+
+.report-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+}
+
+.report-modal-input-required {
+  margin-bottom: $space-4;
+}
+
+.report-modal-label {
+  font-size: $font-size-sm;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.report-modal-select,
+.report-modal-input {
+  padding: $space-2 $space-3;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: $font-size-base;
+  font-family: inherit;
+  min-height: 2.25rem;
+  min-width: 140px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+  }
+}
+
+.report-modal-select {
+  cursor: pointer;
+  max-width: 220px;
+}
+
+.report-modal-field-users {
+  width: 100%;
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.report-modal-select-multi {
+  width: 100%;
+  min-height: 6rem;
+  max-height: 12rem;
+  padding: $space-2;
+}
+
+.report-modal-field-hint {
+  display: block;
+  margin-top: $space-1;
+  font-size: $font-size-xs;
+  color: var(--color-text-muted);
+}
+
+.report-modal-error {
+  margin: 0 0 $space-4;
+  padding: $space-2 $space-3;
+  font-size: $font-size-sm;
+  color: var(--color-error, #b91c1c);
+  background: var(--color-error-bg, #fef2f2);
+  border-radius: $radius-md;
+}
+
+.report-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-3;
+}

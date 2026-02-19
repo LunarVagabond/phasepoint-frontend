@@ -1,0 +1,175 @@
+// AuditTrailView component styles
+@use '../variables' as *;
+
+.audit-trail {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.audit-header {
+  margin-bottom: $space-6;
+}
+
+.audit-filters {
+  margin-bottom: $space-4;
+  padding: $space-3 $space-4;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+
+  .filters-row {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: $space-4;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: $space-1;
+  }
+
+  .filter-label {
+    font-size: $font-size-sm;
+    font-weight: 500;
+    color: var(--color-text-muted);
+  }
+
+  .filter-input,
+  .filter-select {
+    padding: $space-2 $space-3;
+    border: 1px solid var(--color-border);
+    border-radius: $radius-md;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: $font-size-sm;
+    min-width: 140px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+    }
+  }
+
+  .btn-clear-filters {
+    padding: $space-2 $space-3;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: $radius-md;
+    color: var(--color-text-muted);
+    font-size: $font-size-sm;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--color-background);
+      color: var(--color-text);
+    }
+  }
+}
+
+.audit-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: $space-3;
+  margin-top: $space-4;
+  padding: $space-2 0;
+
+  .pagination-info {
+    font-size: $font-size-sm;
+    color: var(--color-text-muted);
+  }
+
+  .pagination-buttons {
+    display: flex;
+    gap: $space-2;
+  }
+
+  .btn-pagination {
+    padding: $space-2 $space-4;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: $radius-md;
+    color: var(--color-text);
+    font-size: $font-size-sm;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: var(--color-background);
+      border-color: var(--color-primary);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.audit-title {
+  font-size: $font-size-2xl;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 $space-2;
+}
+
+.audit-desc {
+  font-size: $font-size-base;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.audit-detail-modal .detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-3;
+}
+
+.audit-detail-modal .detail-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.audit-detail-modal .pre {
+  font-size: $font-size-sm;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--color-background);
+  padding: $space-2;
+  border-radius: $radius-md;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-family: monospace;
+}
+
+.audit-detail-modal .detail-item .detail-label {
+  display: block;
+  margin-bottom: $space-1;
+  color: var(--color-text-muted);
+}
+
+.audit-detail-modal .detail-item .detail-value {
+  color: var(--color-text);
+}
+
+.audit-detail-modal .hash {
+  display: block;
+  font-family: monospace;
+  font-size: $font-size-sm;
+  word-break: break-all;
+  margin-top: $space-1;
+  color: var(--color-text);
+  background: var(--color-background);
+  padding: $space-2;
+  border-radius: $radius-md;
+  border: 1px solid var(--color-border);
+}

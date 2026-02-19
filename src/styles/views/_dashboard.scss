@@ -1,0 +1,726 @@
+// DashboardView component styles
+@use '../variables' as *;
+
+.dashboard {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.dashboard-section {
+  margin-bottom: $space-8;
+}
+
+.dashboard .section-head {
+  display: flex;
+  align-items: center;
+  gap: $space-4;
+  margin-bottom: $space-2;
+  flex-wrap: wrap;
+}
+
+.dashboard .section-head .section-title {
+  margin: 0;
+  font-size: $font-size-lg;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.dashboard .btn-add-in-header {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-2 $space-4;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  color: var(--color-primary);
+  background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+  border: 1px solid var(--color-primary);
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.2);
+  }
+}
+
+.dashboard .section-title {
+  font-size: $font-size-lg;
+  margin: 0 0 $space-2;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.dashboard .section-desc {
+  font-size: $font-size-sm;
+  color: var(--color-text-muted);
+  margin: 0 0 $space-3;
+}
+
+.dashboard :deep(.add-row) {
+  background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.08);
+  border-bottom: none;
+
+  td {
+    border-bottom: none;
+    padding: $space-3 $space-4;
+  }
+}
+
+.add-user-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-3;
+}
+
+.add-label {
+  font-weight: 500;
+  color: var(--color-primary);
+  margin-right: $space-2;
+}
+
+.add-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25em;
+  height: 1.25em;
+  margin-right: $space-2;
+  font-size: 1.1em;
+  font-weight: 700;
+  background: var(--color-primary);
+  color: white;
+  border-radius: $radius-sm;
+}
+
+.add-user-form input {
+  padding: $space-2 $space-3;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  background: var(--color-surface);
+  color: var(--color-text);
+  min-width: 120px;
+  font-family: inherit;
+  font-size: $font-size-base;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+  }
+}
+
+.btn-add {
+  padding: $space-2 $space-4;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: $radius-md;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: var(--color-primary-hover);
+  }
+}
+
+.btn-sm {
+  padding: $space-1 $space-2;
+  font-size: 0.85em;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.btn-edit {
+  color: var(--color-text);
+  
+  &:hover {
+    color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+  }
+}
+
+.btn-cancel {
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
+  
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.btn-remove {
+  color: var(--color-error);
+  
+  &:hover:not(:disabled) {
+    background: rgba(var(--color-error-rgb, 220, 38, 38), 0.1);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.action-separator {
+  color: var(--color-text-muted);
+  margin: 0 $space-1;
+  user-select: none;
+}
+
+.error-inline {
+  color: var(--color-error);
+  font-size: 0.9em;
+}
+
+.success-inline {
+  color: var(--color-success);
+  font-size: 0.9em;
+}
+
+.actions-col {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.group-list {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  margin-bottom: $space-4;
+}
+
+.group-check {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  cursor: pointer;
+  color: var(--color-text);
+  
+  input[type="checkbox"] {
+    cursor: pointer;
+  }
+}
+
+// Dashboard-specific toolbar, modals, and forms (migrated from DashboardView.vue)
+.dashboard .list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-3;
+  margin-bottom: $space-4;
+}
+
+.dashboard .pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: $space-3;
+  margin-top: $space-4;
+  padding: $space-2 0;
+}
+
+.dashboard .pagination-bar .pagination-info {
+  font-size: $font-size-sm;
+  color: var(--color-text-muted);
+}
+
+.dashboard .pagination-bar .pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+}
+
+.dashboard .pagination-bar .pagination-page {
+  font-size: $font-size-sm;
+  color: var(--color-text-muted);
+}
+
+.dashboard .pagination-bar .pagination-btn {
+  padding: $space-2 $space-4;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  color: var(--color-text);
+  font-size: $font-size-sm;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dashboard .pagination-bar .pagination-btn:hover:not(:disabled) {
+  background: var(--color-background);
+  border-color: var(--color-primary);
+}
+
+.dashboard .pagination-bar .pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dashboard .filter-select,
+.dashboard .filter-input {
+  padding: $space-2 $space-3;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: $font-size-base;
+}
+
+.dashboard .filter-input {
+  min-width: 200px;
+}
+
+.dashboard .search-input-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.dashboard .search-input-wrap .filter-input {
+  padding-right: 2.25rem;
+}
+
+.dashboard .search-clear-btn {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: $radius-sm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+
+.dashboard .search-clear-btn:hover {
+  color: var(--color-text);
+  background: var(--color-border);
+}
+
+.dashboard .row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+}
+
+.dashboard .row-actions .btn-sm {
+  padding: $space-1 $space-2;
+  font-size: $font-size-sm;
+  border-radius: $radius-md;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.dashboard .row-actions .btn-seen:hover { background: var(--color-border); }
+.dashboard .row-actions .btn-accept { border-color: var(--color-success, green); color: var(--color-success, green); }
+.dashboard .row-actions .btn-accept:hover { background: rgba(34, 197, 94, 0.1); }
+.dashboard .row-actions .btn-reject { border-color: var(--color-error); color: var(--color-error); }
+.dashboard .row-actions .btn-reject:hover { background: rgba(239, 68, 68, 0.1); }
+.dashboard .row-actions .btn-complete:hover { background: var(--color-border); }
+.dashboard .row-actions .btn-note { color: var(--color-text-muted); }
+.dashboard .row-actions .btn-note:hover { background: var(--color-border); }
+
+.dashboard .table-hint {
+  font-size: $font-size-sm;
+  color: var(--color-text-muted);
+  margin: $space-2 0 0;
+}
+
+// Detail modals (employee, customer, intake): table layout for readable key-value pairs
+.dashboard .employee-detail-modal .detail-table,
+.dashboard .customer-detail-modal .detail-table,
+.dashboard .intake-detail-modal .detail-table {
+  width: 100%;
+  margin: 0 0 $space-6;
+  border-collapse: collapse;
+  font-size: $font-size-base;
+
+  th, td {
+    padding: $space-2 $space-4;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+  }
+
+  th {
+    font-weight: 500;
+    color: var(--color-text-muted);
+    width: 8rem;
+    min-width: 7rem;
+  }
+
+  td {
+    color: var(--color-text);
+  }
+
+  td.detail-notes {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  tr:last-child th,
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: $space-1 $space-2;
+    border-radius: $radius-md;
+    font-size: $font-size-sm;
+    background: var(--color-border);
+    color: var(--color-text);
+  }
+}
+
+.dashboard .intake-detail-modal .intake-detail-dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: $space-2 $space-6;
+  margin: 0 0 $space-6;
+  font-size: $font-size-base;
+}
+
+.dashboard .intake-detail-modal dt {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.dashboard .intake-detail-modal dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.dashboard .intake-detail-modal .detail-notes {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.dashboard .intake-detail-modal .badge {
+  display: inline-block;
+  padding: $space-1 $space-2;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.dashboard .intake-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-4;
+  margin-bottom: $space-4;
+  flex-wrap: wrap;
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.dashboard .intake-modal-header .btn-status-note {
+  padding: $space-1 $space-3;
+  font-size: $font-size-sm;
+  border-radius: $radius-md;
+  border: 1px solid var(--color-primary);
+  background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+  color: var(--color-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  &:hover {
+    background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.2);
+  }
+}
+
+.dashboard .intake-detail-modal .status-note-form {
+  margin-bottom: $space-4;
+
+  .status-note-hint {
+    margin: 0 0 $space-2;
+    font-size: $font-size-sm;
+    color: var(--color-text-muted);
+  }
+
+  .textarea-input {
+    width: 100%;
+    margin-bottom: $space-2;
+    resize: vertical;
+    min-height: 80px;
+  }
+
+  .status-note-actions {
+    display: flex;
+    gap: $space-2;
+    margin-bottom: $space-2;
+  }
+}
+
+.dashboard .modal-success {
+  color: var(--color-success, #22c55e);
+  font-size: $font-size-sm;
+  margin: $space-2 0 0;
+}
+
+.dashboard .intake-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+  align-items: center;
+}
+
+.dashboard .intake-modal-actions .btn-sm {
+  padding: $space-1 $space-2;
+  font-size: $font-size-sm;
+  border-radius: $radius-md;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.dashboard .intake-modal-actions .btn-seen:hover { background: var(--color-border); }
+.dashboard .intake-modal-actions .btn-accept { border-color: var(--color-success, green); color: var(--color-success, green); }
+.dashboard .intake-modal-actions .btn-accept:hover { background: rgba(34, 197, 94, 0.1); }
+.dashboard .intake-modal-actions .btn-reject { border-color: var(--color-error); color: var(--color-error); }
+.dashboard .intake-modal-actions .btn-reject:hover { background: rgba(239, 68, 68, 0.1); }
+.dashboard .intake-modal-actions .btn-complete {
+  min-height: 2.25rem;
+  padding: $space-1 $space-3;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+.dashboard .intake-modal-actions .btn-complete:hover { background: var(--color-border); }
+.dashboard .intake-modal-actions .btn-secondary {
+  min-height: 2.25rem;
+  padding: $space-1 $space-3;
+}
+.dashboard .intake-modal-actions .btn-note { color: var(--color-text-muted); }
+.dashboard .intake-modal-actions .btn-note:hover { background: var(--color-border); }
+
+.dashboard .modal-error {
+  color: var(--color-error);
+  font-size: $font-size-sm;
+  margin: $space-2 0 0;
+}
+
+// Add/Edit employee (and other) modals: ensure form inputs use modal styling
+.dashboard .modal .modal-form .form-row,
+.dashboard .modal .form-row {
+  .field-label {
+    display: block;
+    font-size: $font-size-sm;
+    color: var(--color-text-muted);
+    margin-bottom: $space-1;
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+    padding: $space-2 $space-3;
+    border: 1px solid var(--color-border);
+    border-radius: $radius-md;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: $font-size-base;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.5;
+  }
+}
+
+.dashboard .intake-detail-modal .form-row .btn-save-note {
+  margin-top: $space-2;
+}
+
+.dashboard .pickup-schedule-card {
+  margin-top: $space-4;
+  padding: $space-4;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+}
+
+.dashboard .pickup-schedule-title {
+  margin: 0 0 $space-1;
+  font-size: $font-size-base;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.dashboard .pickup-schedule-hint {
+  margin: 0 0 $space-3;
+  font-size: $font-size-sm;
+  color: var(--color-text-muted);
+}
+
+.dashboard .pickup-schedule-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: $space-3;
+}
+
+.dashboard .pickup-field {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+  min-width: 140px;
+}
+
+.dashboard .pickup-field label {
+  font-size: $font-size-sm;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.dashboard .pickup-input {
+  padding: $space-2 $space-3;
+  font-size: $font-size-base;
+  min-height: 40px;
+}
+
+.dashboard .pickup-actions {
+  margin-left: $space-2;
+}
+
+.dashboard .required { color: var(--color-error); }
+
+.dashboard .reject-form .reject-title {
+  font-size: $font-size-base;
+  font-weight: 600;
+  margin: 0 0 $space-4;
+  color: var(--color-text);
+}
+
+.dashboard .reject-form .field-label {
+  display: block;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: $space-1;
+}
+
+.dashboard .reject-form .textarea-input {
+  width: 100%;
+  margin-bottom: $space-4;
+  padding: $space-3 $space-4;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: $font-size-base;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.dashboard .reject-form .textarea-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.dashboard .confirm-modal .confirm-message {
+  margin: 0 0 $space-4;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.dashboard .customer-detail-modal .form-row {
+  margin-top: $space-4;
+}
+
+.dashboard .customer-detail-modal .form-row .field-label {
+  display: block;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: $space-1;
+}
+
+.dashboard .customer-detail-modal .textarea-input {
+  width: 100%;
+  padding: $space-3 $space-4;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: $font-size-base;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.dashboard .customer-detail-modal .textarea-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+// Add customer modal: address search + grid
+.dashboard .address-suggestions {
+  margin: $space-1 0 0;
+  padding: $space-1;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  background: var(--color-surface);
+  max-height: 180px;
+  overflow: auto;
+}
+
+.dashboard .address-suggestions li {
+  padding: $space-2 $space-3;
+  cursor: pointer;
+  border-radius: $radius-sm;
+}
+
+.dashboard .address-suggestions li:hover {
+  background: var(--color-border);
+}
+
+.dashboard .address-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-3;
+}
+
+@media (max-width: 700px) {
+  .dashboard .address-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,33 @@
+@use '../variables' as *;
+
+// ServicesView shares public page styles with AboutView
+// Import the base public page styles
+@use 'about';
+
+// Additional service-specific styles
+.service-list {
+  list-style: none;
+  padding: 0;
+  margin: $space-4 0;
+
+  li {
+    padding: $space-3 0;
+    padding-left: $space-6;
+    position: relative;
+    font-size: $font-size-base;
+    color: var(--color-text-muted);
+    line-height: 1.7;
+
+    &::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+
+    strong {
+      color: var(--color-text);
+    }
+  }
+}

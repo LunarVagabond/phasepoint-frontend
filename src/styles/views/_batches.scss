@@ -1,0 +1,85 @@
+// BatchesListView component styles
+@use '../variables' as *;
+
+.batches {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.batches-header {
+  margin-bottom: $space-6;
+}
+
+.batches-title {
+  font-size: $font-size-2xl;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 $space-2;
+}
+
+.batches-desc {
+  font-size: $font-size-base;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.batches-toolbar {
+  margin-bottom: $space-4;
+}
+
+.search-input-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: $radius-sm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+
+.search-clear-btn:hover {
+  color: var(--color-text);
+  background: var(--color-border);
+}
+
+.filter-input {
+  width: 100%;
+  max-width: 400px;
+  padding: $space-2 $space-4;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: inherit;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 37, 99, 235), 0.1);
+  }
+  
+  &::placeholder {
+    color: var(--color-text-muted);
+  }
+}
+
+.search-input-wrap .filter-input {
+  padding-right: 2.25rem;
+}

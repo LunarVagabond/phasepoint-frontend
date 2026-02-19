@@ -1,0 +1,98 @@
+@use '../variables' as *;
+
+.customer-shipments {
+  display: grid;
+  gap: $space-5;
+}
+
+.page-header {
+  margin-bottom: $space-2;
+
+  h2 {
+    margin: 0 0 $space-1;
+  }
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: $font-size-sm;
+}
+
+.loading-state,
+.error-state,
+.empty-state {
+  padding: $space-6;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.error-state {
+  color: var(--color-error);
+}
+
+.shipments-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: $radius-md;
+}
+
+.shipments-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: $font-size-sm;
+
+  th,
+  td {
+    padding: $space-3;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  th {
+    font-weight: 600;
+    color: var(--color-text-muted);
+    background: var(--color-background);
+  }
+}
+
+.shipment-row {
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-background);
+  }
+}
+
+.status-badge {
+  display: inline-block;
+  padding: $space-1 $space-2;
+  border-radius: 999px;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.status-draft { background: #fef3c7; color: #92400e; }
+.status-shipped { background: #dcfce7; color: #166534; }
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: $font-size-sm;
+}
+
+@media (max-width: 900px) {
+  .shipments-table {
+    font-size: $font-size-xs;
+
+    th,
+    td {
+      padding: $space-2;
+    }
+  }
+}

@@ -1,0 +1,181 @@
+@use '../variables' as *;
+
+.customer-layout-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 20% -10%, rgba(var(--color-primary-rgb, 37, 99, 235), 0.25), transparent 45%),
+    radial-gradient(circle at 90% 0%, rgba(22, 163, 74, 0.2), transparent 35%),
+    var(--color-background);
+}
+
+.customer-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: $space-4;
+  padding: $space-4 $space-6;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.topbar-left {
+  display: flex;
+  align-items: baseline;
+  gap: $space-2;
+}
+
+.brand {
+  font-size: $font-size-xl;
+  font-weight: 700;
+  color: var(--color-text);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.brand-subtitle {
+  color: var(--color-text-muted);
+  font-size: $font-size-sm;
+}
+
+.readonly-tag {
+  color: var(--color-text-muted);
+  font-size: $font-size-sm;
+}
+
+.topbar-right-group {
+  display: flex;
+  align-items: center;
+  gap: $space-4;
+  flex-wrap: wrap;
+}
+
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+}
+
+.nav-link {
+  color: var(--color-text);
+  text-decoration: none;
+  padding: $space-2 $space-3;
+  border-radius: $radius-md;
+
+  &:hover {
+    background: var(--color-border);
+    text-decoration: none;
+  }
+
+  &.active {
+    background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.12);
+    color: var(--color-primary);
+    border: 1px solid rgba(var(--color-primary-rgb, 37, 99, 235), 0.25);
+  }
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+}
+
+.customer-topbar .theme-toggle {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid transparent;
+  color: var(--color-text);
+  padding: $space-2;
+  border-radius: $radius-md;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: var(--color-border);
+  }
+
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+.logout {
+  color: var(--color-error);
+  font-size: $font-size-sm;
+  text-decoration: none;
+  padding: $space-2 $space-3;
+  border-radius: $radius-md;
+
+  &:hover {
+    background: rgba(var(--color-error-rgb, 220, 38, 38), 0.08);
+    text-decoration: none;
+  }
+}
+
+/* Tracking sub-nav: sits directly under the site header when on /tracking/* (above dev banner) */
+.customer-tracking-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0 $space-6;
+  min-height: 2.75rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.customer-tracking-subnav .tracking-tab {
+  padding: 0.5rem 1rem;
+  border-radius: $radius-md;
+  text-decoration: none;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  font-size: $font-size-sm;
+  transition: background 0.15s, color 0.15s;
+}
+
+.customer-tracking-subnav .tracking-tab:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.customer-tracking-subnav .tracking-tab.active {
+  background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.12);
+  color: var(--color-primary);
+}
+
+.customer-main {
+  padding: 0 $space-6 $space-10;
+}
+
+.customer-main-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .customer-topbar {
+    grid-template-columns: 1fr;
+    gap: $space-3;
+  }
+
+  .topbar-nav {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}

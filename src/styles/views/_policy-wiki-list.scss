@@ -1,0 +1,79 @@
+// PolicyWikiList / ProceduresWikiList (shared .wiki-list) styles
+@use '../variables' as *;
+
+.wiki-list {
+  max-width: 65ch;
+}
+
+.wiki-list .admin-actions {
+  margin-bottom: $space-6;
+  padding-bottom: $space-4;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.wiki-list .btn-create {
+  display: inline-block;
+  padding: $space-2 $space-5;
+  background: var(--color-success, #22c55e);
+  color: white;
+  text-decoration: none;
+  border-radius: $radius-md;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.wiki-list .btn-create:hover {
+  background: var(--color-success-hover, #16a34a);
+  text-decoration: none;
+}
+
+.wiki-list .intro {
+  color: var(--color-text-muted);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  margin: 0 0 $space-6;
+}
+
+.wiki-list .policy-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.wiki-list .policy-list li {
+  margin-bottom: $space-2;
+}
+
+.wiki-list .policy-list .policy-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-3;
+}
+
+.wiki-list .policy-list a {
+  display: block;
+  padding: $space-3 $space-4;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-radius: $radius-md;
+  transition: background 0.15s, color 0.15s;
+  font-weight: 500;
+  font-size: 1rem;
+
+  &:hover {
+    background: rgba(var(--color-primary-rgb, 37, 99, 235), 0.08);
+    text-decoration: none;
+  }
+}
+
+.wiki-list .edit-link {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-size: 1.2em;
+}
+
+.wiki-list .edit-link:hover {
+  color: var(--color-primary);
+  text-decoration: none;
+}

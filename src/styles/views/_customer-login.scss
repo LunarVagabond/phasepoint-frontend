@@ -1,0 +1,13 @@
+@use '../variables' as *;
+
+// CustomerLoginView shares auth page styles with CustomerRegisterView
+@use 'customer-register';
+
+// Login-specific overrides
+.auth-card {
+  max-width: 520px; // Smaller than register
+}
+
+.auth-form {
+  gap: $space-3; // Tighter spacing for login
+}

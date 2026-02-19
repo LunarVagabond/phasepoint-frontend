@@ -1,0 +1,41 @@
+@use '../variables' as *;
+
+.terms-page {
+  display: grid;
+  gap: $space-6;
+}
+
+.terms-header h2 {
+  margin: 0 0 $space-2;
+}
+
+.terms-header p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.terms-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: $radius-lg;
+  padding: $space-6;
+  box-shadow: var(--shadow-sm);
+
+  h3 {
+    margin-top: 0;
+  }
+
+  p {
+    color: var(--color-text-muted);
+    line-height: 1.7;
+  }
+
+  ul {
+    margin: $space-4 0 0;
+    padding-left: 1.25rem;
+  }
+
+  li + li {
+    margin-top: $space-2;
+  }
+}

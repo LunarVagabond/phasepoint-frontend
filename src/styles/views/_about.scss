@@ -1,0 +1,150 @@
+@use '../variables' as *;
+
+.public-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-background);
+}
+
+.public-main {
+  flex: 1;
+  width: 100%;
+}
+
+.page-hero {
+  text-align: center;
+  padding: $space-12 $space-4;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0 0 $space-4;
+  }
+}
+
+.hero-subtitle {
+  font-size: clamp(1.125rem, 2vw, 1.5rem);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.page-section {
+  padding: $space-12 $space-4;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.section-content h2 {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 $space-6;
+}
+
+.section-content p {
+  font-size: $font-size-base;
+  color: var(--color-text-muted);
+  line-height: 1.7;
+  margin: 0 0 $space-4;
+}
+
+.values-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: $space-6;
+  margin-top: $space-6;
+}
+
+.value-item {
+  padding: $space-6;
+  background: var(--color-surface);
+  border-radius: $radius-lg;
+  border: 1px solid var(--color-border);
+
+  h3 {
+    font-size: $font-size-lg;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 $space-3;
+  }
+
+  p {
+    font-size: $font-size-base;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+    margin: 0;
+  }
+}
+
+.public-footer {
+  padding: $space-10 $space-4 $space-6;
+  font-size: $font-size-sm;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: $space-8;
+  margin-bottom: $space-8;
+}
+
+.footer-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.footer-heading {
+  font-size: $font-size-base;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 $space-3;
+}
+
+.footer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+
+  a {
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+
+    &:hover {
+      color: var(--color-primary);
+    }
+  }
+}
+
+.footer-contact {
+  margin: 0 0 $space-2;
+  color: var(--color-text-muted);
+}
+
+.footer-bottom {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+  padding-top: $space-6;
+  border-top: 1px solid var(--color-border);
+}
+
+.footer-copy {
+  margin: 0 0 $space-2;
+  opacity: 0.9;
+}
+
+.footer-copyright {
+  margin: 0;
+  opacity: 0.7;
+  font-size: $font-size-xs;
+}
