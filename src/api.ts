@@ -1750,6 +1750,51 @@ export async function getKpis(format: 'json' | 'csv' | 'pdf' = 'json'): Promise<
   }
 }
 
+export interface MyPerformanceResponse {
+  assets_intaken: number
+  work_orders_assigned: number
+  work_orders_completed: number
+  sanitization_total: number
+  sanitization_passed: number
+  sanitization_failed: number
+  intake_requests_accepted: number
+  shipments_completed: number
+  intake_batches_created: number
+}
+
+export async function getMyPerformance(): Promise<MyPerformanceResponse> {
+  const r = await request('/reports/my-performance/')
+  if (!r.ok) throw new Error('Failed to load performance metrics')
+  return r.json() as Promise<MyPerformanceResponse>
+}
+
+export interface WorkflowAlert {
+  id: string
+  asset_id: string
+  alert_type: 'STUCK_INTAKE' | 'STUCK_WIPE' | 'NOT_SCANNED'
+  message: string
+  created_at: string
+  resolved_at: string | null
+}
+
+export async function getWorkflowAlerts(params?: {
+  customer_id?: string
+  created_after?: string
+  created_before?: string
+  open_only?: boolean
+}): Promise<WorkflowAlert[]> {
+  const queryParams = new URLSearchParams()
+  if (params?.customer_id) queryParams.set('customer_id', params.customer_id)
+  if (params?.created_after) queryParams.set('created_after', params.created_after)
+  if (params?.created_before) queryParams.set('created_before', params.created_before)
+  if (params?.open_only !== undefined) queryParams.set('open_only', params.open_only ? '1' : '0')
+  
+  const url = `/reports/workflow-alerts/${queryParams.toString() ? '?' + queryParams.toString() : ''}`
+  const r = await request(url)
+  if (!r.ok) throw new Error('Failed to load workflow alerts')
+  return r.json() as Promise<WorkflowAlert[]>
+}
+
 /** Map internal audit event_type (enum) to customer-facing display text. Use everywhere we show event types to users. */
 export const AUDIT_EVENT_TYPE_DISPLAY: Record<string, string> = {
   INTAKE_REQUEST_CREATED: 'Request submitted',

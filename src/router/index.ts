@@ -34,6 +34,7 @@ const routes = [
       { path: 'shipments/:id', name: 'ShipmentDetail', component: () => import('../views/ShipmentDetailView.vue'), meta: { title: 'Shipment' } },
       { path: 'batches', name: 'Batches', component: () => import('../views/BatchesListView.vue'), meta: { title: 'Batches' } },
       { path: 'audit', name: 'Audit', component: () => import('../views/AuditTrailView.vue'), meta: { title: 'Audit trail' } },
+      { path: 'workflow-alerts', name: 'WorkflowAlerts', component: () => import('../views/WorkflowAlertsView.vue'), meta: { title: 'Workflow Alerts', requiresManager: true } },
       { path: 'reports', name: 'Reports', component: () => import('../views/ReportsView.vue'), meta: { title: 'Reports' } },
       { path: 'customers/:customerId/context', name: 'CustomerContextInternal', component: () => import('../views/CustomerContextInternalView.vue'), meta: { title: 'Customer Context' } },
       { path: 'customers/:customerId', name: 'CustomerDetail', component: () => import('../views/CustomerDetailView.vue'), meta: { title: 'Customer Detail' } },
@@ -208,6 +209,12 @@ router.beforeEach(async (to) => {
     if (!canEditPolicies(me)) {
       const isProcedureRoute = to.path.startsWith('/employee-portal/procedures')
       return { name: isProcedureRoute ? 'Procedures' : 'Policies', query: { error: 'permission_denied' } }
+    }
+  }
+  if (to.meta.requiresManager) {
+    const groups = (me.groups_display || []).map((g: string) => g.toLowerCase())
+    if (!groups.includes('manager')) {
+      return { name: 'Dashboard', query: { error: 'permission_denied' } }
     }
   }
   return true

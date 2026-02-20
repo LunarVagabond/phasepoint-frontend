@@ -1,5 +1,83 @@
 <template>
   <div class="dashboard">
+    <section v-if="showThroughputMetrics" class="dashboard-section">
+      <div class="section-head">
+        <h2 class="section-title">Throughput Metrics</h2>
+        <router-link v-if="!throughputLoading && !throughputError" to="/employee-portal/workflow-alerts" class="throughput-alerts-inline">
+          <span class="alert-label-inline">Open Alerts:</span>
+          <span class="alert-count-inline">{{ throughputData.openAlerts || 0 }}</span>
+        </router-link>
+      </div>
+      <p class="section-desc">Assets processed and operational metrics</p>
+      <div v-if="throughputLoading" class="loading-state">Loading metrics…</div>
+      <div v-else-if="throughputError" class="error-state">{{ throughputError }}</div>
+      <div v-else class="throughput-metrics">
+        <div class="throughput-grid">
+          <div class="throughput-card throughput-card-scrollable">
+            <h3>Assets by Stage</h3>
+            <div v-if="throughputData.assetsByStage && throughputData.assetsByStage.length > 0" class="stage-list-scrollable">
+              <div v-for="stage in throughputData.assetsByStage" :key="stage.location" class="stage-item">
+                <span class="stage-label">{{ formatLocation(stage.location) }}</span>
+                <span class="stage-count">{{ stage.count }}</span>
+              </div>
+            </div>
+            <p v-else class="modal-muted">No stage data available</p>
+          </div>
+          <div class="throughput-card throughput-card-scrollable">
+            <h3>Employee Metrics</h3>
+            <div v-if="throughputData.processedByEmployee && throughputData.processedByEmployee.length > 0" class="employee-list-scrollable">
+              <div v-for="(emp, idx) in throughputData.processedByEmployee" :key="emp.intake_employee__username || idx" class="employee-item">
+                <span class="employee-name">{{ emp.intake_employee__username || 'Unknown' }}</span>
+                <span class="employee-count">{{ emp.count }} assets</span>
+              </div>
+            </div>
+            <p v-else class="modal-muted">No employee data available</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="dashboard-section">
+      <h2 class="section-title">Performance Summary</h2>
+      <p class="section-desc">Your current performance metrics</p>
+      <div v-if="myPerformanceLoading" class="loading-state">Loading…</div>
+      <div v-else-if="myPerformanceError" class="error-state">{{ myPerformanceError }}</div>
+      <div v-else class="performance-summary">
+        <div class="performance-grid">
+          <div class="performance-card">
+            <p class="performance-label">Assets Intaken</p>
+            <p class="performance-value">{{ myPerformance.assets_intaken }}</p>
+            <p class="performance-desc">Assets you have received</p>
+          </div>
+          <div class="performance-card">
+            <p class="performance-label">Work Orders</p>
+            <p class="performance-value">{{ myPerformance.work_orders_completed }} / {{ myPerformance.work_orders_assigned }}</p>
+            <p class="performance-desc">Completed / Assigned</p>
+          </div>
+          <div class="performance-card">
+            <p class="performance-label">Sanitizations</p>
+            <p class="performance-value">{{ myPerformance.sanitization_total }}</p>
+            <p class="performance-desc">{{ myPerformance.sanitization_passed }} passed, {{ myPerformance.sanitization_failed }} failed</p>
+          </div>
+          <div class="performance-card">
+            <p class="performance-label">Intake Requests</p>
+            <p class="performance-value">{{ myPerformance.intake_requests_accepted }}</p>
+            <p class="performance-desc">Requests you've accepted</p>
+          </div>
+          <div class="performance-card">
+            <p class="performance-label">Shipments</p>
+            <p class="performance-value">{{ myPerformance.shipments_completed }}</p>
+            <p class="performance-desc">Shipments you've completed</p>
+          </div>
+          <div class="performance-card">
+            <p class="performance-label">Intake Batches</p>
+            <p class="performance-value">{{ myPerformance.intake_batches_created }}</p>
+            <p class="performance-desc">Batches you've created</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="dashboard-section">
       <h2 class="section-title">My open work orders</h2>
       <p class="section-desc">Work orders assigned to you that are in progress.</p>
@@ -20,6 +98,7 @@
       </div>
       <p v-if="!workOrdersLoading && openWorkOrders.length === 0" class="modal-muted">No open work orders.</p>
     </section>
+
     <section v-if="showEmployees" class="dashboard-section">
       <div class="section-head">
         <h2 class="section-title">Employees</h2>
@@ -134,42 +213,6 @@
         </div>
       </div>
       <p v-if="!intakeLoading && intakeRequests.length === 0" class="modal-muted">No intake requests.</p>
-    </section>
-
-    <section class="dashboard-section">
-      <h2 class="section-title">Throughput Metrics</h2>
-      <p class="section-desc">Assets processed and operational metrics</p>
-      <div v-if="throughputLoading" class="loading-state">Loading metrics…</div>
-      <div v-else-if="throughputError" class="error-state">{{ throughputError }}</div>
-      <div v-else class="throughput-metrics">
-        <div class="throughput-grid">
-          <div class="throughput-card">
-            <h3>Assets by Stage</h3>
-            <div v-if="throughputData.assetsByStage && throughputData.assetsByStage.length > 0" class="stage-list">
-              <div v-for="stage in throughputData.assetsByStage" :key="stage.location" class="stage-item">
-                <span class="stage-label">{{ formatLocation(stage.location) }}</span>
-                <span class="stage-count">{{ stage.count }}</span>
-              </div>
-            </div>
-            <p v-else class="modal-muted">No stage data available</p>
-          </div>
-          <div class="throughput-card">
-            <h3>Top Employees</h3>
-            <div v-if="throughputData.processedByEmployee && throughputData.processedByEmployee.length > 0" class="employee-list">
-              <div v-for="(emp, idx) in throughputData.processedByEmployee.slice(0, 5)" :key="emp.intake_employee__username || idx" class="employee-item">
-                <span class="employee-name">{{ emp.intake_employee__username || 'Unknown' }}</span>
-                <span class="employee-count">{{ emp.count }} assets</span>
-              </div>
-            </div>
-            <p v-else class="modal-muted">No employee data available</p>
-          </div>
-          <div class="throughput-card">
-            <h3>Open Alerts</h3>
-            <p class="alert-count">{{ throughputData.openAlerts || 0 }}</p>
-            <p class="alert-label">Workflow alerts requiring attention</p>
-          </div>
-        </div>
-      </div>
     </section>
 
     <section v-if="showCustomers" class="dashboard-section">
@@ -437,7 +480,7 @@
 // TODO: consider extracting AddEmployeeModal, AddCustomerModal, EditEmployeeModal into reusable components
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { createUser, updateUser, deleteUser, createCustomer, canSeeIntakeRequests, getIntakeRequests, searchUsAddresses, getWorkOrders, getKpis } from '../api'
+import { createUser, updateUser, deleteUser, createCustomer, canSeeIntakeRequests, getIntakeRequests, searchUsAddresses, getWorkOrders, getKpis, getMyPerformance } from '../api'
 import DataTable from '../components/DataTable.vue'
 import type { UserSummary, CustomerSummary, IntakeRequestSummary, MeResponse, WorkOrderSummary } from '../api'
 import type { DataTableColumn } from '../components/DataTable.vue'
@@ -484,6 +527,12 @@ const meId = computed(() => me.value?.id ?? null)
 const showIntakeRequests = computed(() => canSeeIntakeRequests(me.value ?? undefined))
 
 const showEmployees = computed(() => {
+  if (!me.value) return false
+  const groups = (me.value.groups_display || []).map((g) => g.toLowerCase())
+  return groups.includes('manager')
+})
+
+const showThroughputMetrics = computed(() => {
   if (!me.value) return false
   const groups = (me.value.groups_display || []).map((g) => g.toLowerCase())
   return groups.includes('manager')
@@ -608,6 +657,30 @@ const confirmPending = ref(false)
 const openWorkOrders = ref<WorkOrderSummary[]>([])
 const workOrdersLoading = ref(true)
 const workOrderPage = ref(1)
+
+const myPerformance = ref<{
+  assets_intaken: number
+  work_orders_assigned: number
+  work_orders_completed: number
+  sanitization_total: number
+  sanitization_passed: number
+  sanitization_failed: number
+  intake_requests_accepted: number
+  shipments_completed: number
+  intake_batches_created: number
+}>({
+  assets_intaken: 0,
+  work_orders_assigned: 0,
+  work_orders_completed: 0,
+  sanitization_total: 0,
+  sanitization_passed: 0,
+  sanitization_failed: 0,
+  intake_requests_accepted: 0,
+  shipments_completed: 0,
+  intake_batches_created: 0,
+})
+const myPerformanceLoading = ref(false)
+const myPerformanceError = ref('')
 
 const throughputLoading = ref(false)
 const throughputError = ref('')
@@ -1015,6 +1088,18 @@ function formatLocation(location: string): string {
   return location.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
 }
 
+async function loadMyPerformance() {
+  myPerformanceLoading.value = true
+  myPerformanceError.value = ''
+  try {
+    myPerformance.value = await getMyPerformance()
+  } catch (e) {
+    myPerformanceError.value = e instanceof Error ? e.message : 'Failed to load performance'
+  } finally {
+    myPerformanceLoading.value = false
+  }
+}
+
 async function loadThroughputMetrics() {
   throughputLoading.value = true
   throughputError.value = ''
@@ -1025,9 +1110,9 @@ async function loadThroughputMetrics() {
       open_alerts: number
     }
     throughputData.value = {
-      processedByEmployee: kpiData.processed_by_employee || [],
-      assetsByStage: kpiData.assets_by_stage || [],
-      openAlerts: kpiData.open_alerts || 0,
+      processedByEmployee: (kpiData as { data?: typeof kpiData }).data?.processed_by_employee ?? kpiData.processed_by_employee ?? [],
+      assetsByStage: (kpiData as { data?: { assets_by_stage: typeof throughputData.value.assetsByStage } }).data?.assets_by_stage ?? kpiData.assets_by_stage ?? [],
+      openAlerts: (kpiData as { data?: { open_alerts: number } }).data?.open_alerts ?? kpiData.open_alerts ?? 0,
     }
   } catch (e) {
     throughputError.value = e instanceof Error ? e.message : 'Failed to load throughput metrics'
@@ -1040,7 +1125,8 @@ onMounted(async () => {
   await load()
   loadCustomers()
   loadOpenWorkOrders()
-  loadThroughputMetrics()
+  loadMyPerformance()
+  if (showThroughputMetrics.value) loadThroughputMetrics()
   if (showIntakeRequests.value) loadIntakeRequests()
 })
 

@@ -54,6 +54,7 @@
           <a v-else href="#" class="disabled" @click.prevent>Reports</a>
           <router-link v-if="!policyOnly" to="/employee-portal/audit" active-class="active">Audit</router-link>
           <a v-else href="#" class="disabled" @click.prevent>Audit</a>
+          <router-link v-if="!policyOnly && isManager" to="/employee-portal/workflow-alerts" active-class="active">Workflow Alerts</router-link>
         </div>
       </details>
       <span class="nav-sep" aria-hidden="true">|</span>
@@ -110,6 +111,7 @@ import { computed, inject, ref, onMounted, onUnmounted, watch, type Ref } from '
 import { useRoute } from 'vue-router'
 import { getApiBaseForRedirect, getPendingStatusRequests } from '../api'
 import { useTheme } from '../composables/useTheme'
+import { useAuthStore } from '../stores/auth'
 
 const props = defineProps<{
   policyOnly?: boolean
@@ -123,6 +125,13 @@ const isMobileMenuOpen = ref(false)
 const pendingStatusCount = ref(0)
 
 const { theme, toggleTheme } = useTheme()
+const authStore = useAuthStore()
+const isManager = computed(() => {
+  const me = authStore.user
+  if (!me || props.policyOnly) return false
+  const groups = (me.groups_display || []).map((g: string) => g.toLowerCase())
+  return groups.includes('manager')
+})
 
 function toggleDropdown(id: DropdownId) {
   openDropdown.value = openDropdown.value === id ? null : id
@@ -183,7 +192,7 @@ const isOperationsActive = computed(() => {
 const isReportsAuditActive = computed(() => {
   const name = route.name as string
   const path = route.path
-  return name === 'Reports' || name === 'Audit' || path.startsWith('/employee-portal/reports') || path.startsWith('/employee-portal/audit')
+  return name === 'Reports' || name === 'Audit' || name === 'WorkflowAlerts' || path.startsWith('/employee-portal/reports') || path.startsWith('/employee-portal/audit') || path.startsWith('/employee-portal/workflow-alerts')
 })
 
 const isDocsActive = computed(() => {
