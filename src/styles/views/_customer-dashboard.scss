@@ -39,6 +39,44 @@
   gap: $space-3;
 }
 
+.sustainability-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-4;
+  align-items: start;
+  max-width: 700px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+  }
+}
+
+.sustainability-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $space-2;
+}
+
+.sustainability-chart-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  h3 {
+    margin: 0 0 $space-4;
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: var(--color-text);
+    width: 100%;
+  }
+
+  :deep(.chart-container) {
+    height: 200px;
+    max-width: 100%;
+  }
+}
+
 .metric-card {
   background: var(--color-background);
   border: 1px solid var(--color-border);
@@ -285,11 +323,42 @@
   margin-top: $space-6;
 }
 
-.asset-summary-grid {
+.asset-summary-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: 1fr 1.5fr;
+  gap: $space-6;
+  align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.status-chart-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  h3 {
+    margin: 0 0 $space-4;
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: var(--color-text);
+    width: 100%;
+  }
+}
+
+.asset-summary-column {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: $space-4;
-  margin-bottom: $space-4;
+}
+
+.chart-empty {
+  padding: $space-6;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: $font-size-sm;
 }
 
 .summary-stat {

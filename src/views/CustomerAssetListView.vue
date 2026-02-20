@@ -1,8 +1,19 @@
 <template>
   <section class="customer-assets">
     <header class="page-header">
-      <h2>My Assets</h2>
-      <p class="subtitle">View and search all your assets across all requests</p>
+      <div>
+        <h2>My Assets</h2>
+        <p class="subtitle">View and search all your assets across all requests</p>
+      </div>
+      <button
+        v-if="!loading && assetTotalCount > 0"
+        type="button"
+        class="btn-export"
+        @click="exportToCSV"
+        title="Export all assets to CSV"
+      >
+        Export CSV
+      </button>
     </header>
 
     <div class="assets-toolbar">
@@ -139,6 +150,7 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getCustomerAssets, ASSET_LOCATIONS, getLocationLabel } from '../api'
 import type { AssetSummary } from '../api'
+import Papa from 'papaparse'
 
 const route = useRoute()
 const router = useRouter()
@@ -251,6 +263,58 @@ function openDetail(id: string) {
   const underTracking = route.path.includes('/tracking/')
   const path = underTracking ? `${basePath}/tracking/assets/${id}` : `${basePath}/assets/${id}`
   router.push(path)
+}
+
+async function exportToCSV() {
+  try {
+    // Fetch all assets with current filters
+    const customerIdParam = isEmployeePreview.value && customerId.value ? { customer_id: customerId.value } : {}
+    const params: Parameters<typeof getCustomerAssets>[0] = {
+      page_size: 10000, // Large number to get all
+      ...customerIdParam,
+    }
+    if (filters.status) params.status = filters.status
+    if (filters.location) params.location = filters.location
+    if (filters.createdAfter) {
+      const date = new Date(filters.createdAfter)
+      date.setHours(0, 0, 0, 0)
+      params.created_after = date.toISOString()
+    }
+    if (filters.createdBefore) {
+      const date = new Date(filters.createdBefore)
+      date.setHours(23, 59, 59, 999)
+      params.created_before = date.toISOString()
+    }
+    const q = searchQuery.value.trim()
+    if (q) params.search = q
+
+    const res = await getCustomerAssets(params)
+    const allAssets = res.results
+
+    // Convert to CSV format
+    const csvData = allAssets.map(asset => ({
+      'Asset ID': formatAssetId(asset.id),
+      'Manufacturer/Model': asset.manufacturer_model || '',
+      'Serial Number': asset.serial_number || '',
+      'Status': formatStatus(asset.status),
+      'Location': getLocationLabel(asset.location),
+      'Intake Date': asset.intake_timestamp ? formatDate(asset.intake_timestamp) : (asset.created_at ? formatDate(asset.created_at) : ''),
+      'Created At': asset.created_at ? formatDate(asset.created_at) : '',
+    }))
+
+    const csv = Papa.unparse(csvData)
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `assets-export-${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (e) {
+    alert('Failed to export assets: ' + (e instanceof Error ? e.message : 'Unknown error'))
+  }
 }
 
 watch(searchQuery, () => {

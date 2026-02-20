@@ -67,6 +67,7 @@ const routes = [
           { path: 'audit', name: 'CustomerPortalPreviewAuditTrail', component: () => import('../views/CustomerAuditTrailView.vue'), meta: { title: 'Audit Trail', customerPortalReadonly: true } },
           { path: 'users', name: 'CustomerPortalPreviewUsers', component: () => import('../views/CustomerPortalUsersView.vue'), meta: { title: 'Team Users', customerPortalReadonly: true } },
           { path: 'profile', name: 'CustomerPortalPreviewProfile', component: () => import('../views/CustomerProfileView.vue'), meta: { title: 'Profile', customerPortalReadonly: true } },
+          { path: 'insights', name: 'CustomerPortalPreviewInsights', component: () => import('../views/CustomerInsightsView.vue'), meta: { title: 'Insights & Analytics', customerPortalReadonly: true } },
         ],
       },
       {
@@ -135,6 +136,7 @@ const routes = [
       { path: 'users', name: 'CustomerPortalUsers', component: () => import('../views/CustomerPortalUsersView.vue'), meta: { title: 'Team Users', customerOnly: true } },
       { path: 'profile', name: 'CustomerProfile', component: () => import('../views/CustomerProfileView.vue'), meta: { title: 'Profile', customerOnly: true } },
       { path: 'terms', name: 'CustomerTerms', component: () => import('../views/CustomerTermsView.vue'), meta: { title: 'Terms & Conditions', customerOnly: true } },
+      { path: 'insights', name: 'CustomerInsights', component: () => import('../views/CustomerInsightsView.vue'), meta: { title: 'Insights & Analytics', customerOnly: true } },
     ],
   },
   // Catch-all: page not found (must be last)

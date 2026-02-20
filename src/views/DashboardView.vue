@@ -136,6 +136,42 @@
       <p v-if="!intakeLoading && intakeRequests.length === 0" class="modal-muted">No intake requests.</p>
     </section>
 
+    <section class="dashboard-section">
+      <h2 class="section-title">Throughput Metrics</h2>
+      <p class="section-desc">Assets processed and operational metrics</p>
+      <div v-if="throughputLoading" class="loading-state">Loading metrics…</div>
+      <div v-else-if="throughputError" class="error-state">{{ throughputError }}</div>
+      <div v-else class="throughput-metrics">
+        <div class="throughput-grid">
+          <div class="throughput-card">
+            <h3>Assets by Stage</h3>
+            <div v-if="throughputData.assetsByStage && throughputData.assetsByStage.length > 0" class="stage-list">
+              <div v-for="stage in throughputData.assetsByStage" :key="stage.location" class="stage-item">
+                <span class="stage-label">{{ formatLocation(stage.location) }}</span>
+                <span class="stage-count">{{ stage.count }}</span>
+              </div>
+            </div>
+            <p v-else class="modal-muted">No stage data available</p>
+          </div>
+          <div class="throughput-card">
+            <h3>Top Employees</h3>
+            <div v-if="throughputData.processedByEmployee && throughputData.processedByEmployee.length > 0" class="employee-list">
+              <div v-for="(emp, idx) in throughputData.processedByEmployee.slice(0, 5)" :key="emp.intake_employee__username || idx" class="employee-item">
+                <span class="employee-name">{{ emp.intake_employee__username || 'Unknown' }}</span>
+                <span class="employee-count">{{ emp.count }} assets</span>
+              </div>
+            </div>
+            <p v-else class="modal-muted">No employee data available</p>
+          </div>
+          <div class="throughput-card">
+            <h3>Open Alerts</h3>
+            <p class="alert-count">{{ throughputData.openAlerts || 0 }}</p>
+            <p class="alert-label">Workflow alerts requiring attention</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section v-if="showCustomers" class="dashboard-section">
       <div class="section-head">
         <h2 class="section-title">Customers</h2>
@@ -401,7 +437,7 @@
 // TODO: consider extracting AddEmployeeModal, AddCustomerModal, EditEmployeeModal into reusable components
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { createUser, updateUser, deleteUser, createCustomer, canSeeIntakeRequests, getIntakeRequests, searchUsAddresses, getWorkOrders } from '../api'
+import { createUser, updateUser, deleteUser, createCustomer, canSeeIntakeRequests, getIntakeRequests, searchUsAddresses, getWorkOrders, getKpis } from '../api'
 import DataTable from '../components/DataTable.vue'
 import type { UserSummary, CustomerSummary, IntakeRequestSummary, MeResponse, WorkOrderSummary } from '../api'
 import type { DataTableColumn } from '../components/DataTable.vue'
@@ -572,6 +608,18 @@ const confirmPending = ref(false)
 const openWorkOrders = ref<WorkOrderSummary[]>([])
 const workOrdersLoading = ref(true)
 const workOrderPage = ref(1)
+
+const throughputLoading = ref(false)
+const throughputError = ref('')
+const throughputData = ref<{
+  processedByEmployee: Array<{ intake_employee__username: string | null; count: number }>
+  assetsByStage: Array<{ location: string; count: number }>
+  openAlerts: number
+}>({
+  processedByEmployee: [],
+  assetsByStage: [],
+  openAlerts: 0,
+})
 const openWorkOrdersData = computed(() =>
   openWorkOrders.value.map((wo) => ({
     ...wo,
@@ -963,10 +1011,36 @@ function openWorkOrder(row: Record<string, unknown>) {
   router.push(`/employee-portal/work-orders/${id}`)
 }
 
+function formatLocation(location: string): string {
+  return location.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+}
+
+async function loadThroughputMetrics() {
+  throughputLoading.value = true
+  throughputError.value = ''
+  try {
+    const kpiData = await getKpis('json') as {
+      processed_by_employee: Array<{ intake_employee__username: string | null; count: number }>
+      assets_by_stage: Array<{ location: string; count: number }>
+      open_alerts: number
+    }
+    throughputData.value = {
+      processedByEmployee: kpiData.processed_by_employee || [],
+      assetsByStage: kpiData.assets_by_stage || [],
+      openAlerts: kpiData.open_alerts || 0,
+    }
+  } catch (e) {
+    throughputError.value = e instanceof Error ? e.message : 'Failed to load throughput metrics'
+  } finally {
+    throughputLoading.value = false
+  }
+}
+
 onMounted(async () => {
   await load()
   loadCustomers()
   loadOpenWorkOrders()
+  loadThroughputMetrics()
   if (showIntakeRequests.value) loadIntakeRequests()
 })
 

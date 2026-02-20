@@ -9,6 +9,7 @@
       <div class="topbar-right-group">
         <nav class="topbar-nav">
           <router-link :to="`${basePath}`" class="nav-link" active-class="active" exact-active-class="active">Dashboard</router-link>
+          <router-link :to="`${basePath}/insights`" class="nav-link" active-class="active">Insights</router-link>
           <router-link :to="`${basePath}/requests/new`" class="nav-link" active-class="active">Create Request</router-link>
           <router-link :to="`${basePath}/tracking`" class="nav-link" active-class="active">Tracking</router-link>
           <router-link :to="`${basePath}/users`" class="nav-link" active-class="active">Team Users</router-link>
