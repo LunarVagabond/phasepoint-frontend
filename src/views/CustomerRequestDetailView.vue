@@ -42,31 +42,6 @@
           <dd class="notes">{{ request.notes || '—' }}</dd>
         </dl>
 
-        <template v-if="isEmployeeView && request.items && request.items.length > 0">
-          <hr class="summary-divider" />
-          <h4 class="items-table-heading">Requested items</h4>
-          <div class="items-table-wrap">
-            <table class="items-table">
-              <thead>
-                <tr>
-                  <th>Type</th>
-                  <th>Manufacturer / Model</th>
-                  <th>Serial number</th>
-                  <th>Other description</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(it, idx) in request.items" :key="idx">
-                  <td>{{ assetTypeLabel(it.asset_type) }}</td>
-                  <td>{{ it.manufacturer_model || '—' }}</td>
-                  <td>{{ it.serial_number || '—' }}</td>
-                  <td>{{ it.asset_type === 'OTHER' ? (it.type_other || '—') : '—' }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </template>
-
         <template v-if="isEmployeeView">
           <hr class="summary-divider" />
           <h4 class="internal-notes-heading">Internal Notes</h4>

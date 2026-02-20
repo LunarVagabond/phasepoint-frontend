@@ -183,6 +183,7 @@
 
 .time {
   font-weight: 600;
+  margin-right: 0.25rem; /* ensure space before event-type (e.g. "2/20/26" vs "Sanitization recorded") */
 }
 
 .event-type {

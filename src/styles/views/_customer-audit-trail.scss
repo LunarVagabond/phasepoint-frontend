@@ -110,6 +110,7 @@
 .event-time {
   font-weight: 600;
   color: var(--color-text);
+  margin-right: 0.25rem; /* ensure space before event-type */
 }
 
 .event-type {

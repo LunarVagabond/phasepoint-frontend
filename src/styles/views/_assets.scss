@@ -267,7 +267,7 @@
   }
 }
 
-// Sanitization section - warm orange/amber tone
+// Sanitization section - warm orange/amber tone (read-only)
 .asset-detail-drawer .detail-section--sanitization {
   background: linear-gradient(
     135deg,
@@ -276,7 +276,18 @@
     var(--color-surface) 100%
   );
   border-color: rgba(255, 152, 0, 0.2);
-  
+
+  .sanitization-results-readonly {
+    margin-top: 0.5rem;
+  }
+
+  .sanitization-no-record {
+    margin: 0.5rem 0 0;
+    color: var(--color-muted, #6b7280);
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
   @media (prefers-color-scheme: dark) {
     background: linear-gradient(
       135deg,
@@ -360,7 +371,25 @@
     var(--color-surface) 100%
   );
   border-color: rgba(96, 125, 139, 0.2);
-  
+
+  .request-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .request-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem;
+    margin-bottom: $space-2;
+  }
+
+  .request-item-loc {
+    margin-right: 0.25rem;
+  }
+
   @media (prefers-color-scheme: dark) {
     background: linear-gradient(
       135deg,

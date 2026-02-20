@@ -320,33 +320,33 @@
             </div>
           </section>
 
-          <section v-if="detailAsset.location === 'WIPE_STATION'" class="detail-section detail-section--sanitization">
-            <h3 class="detail-section-title">Sanitization result</h3>
-            <p class="detail-section-desc">Record the wipe result. Pass → Clean Cage; Fail → Destruction.</p>
-            <div class="request-form sanitization-form">
-              <div class="form-row">
-                <label>Result</label>
-                <div class="radio-row">
-                  <label class="radio-label">
-                    <input v-model="sanitizationResult" type="radio" value="PASS" />
-                    Pass
-                  </label>
-                  <label class="radio-label">
-                    <input v-model="sanitizationResult" type="radio" value="FAIL" />
-                    Fail
-                  </label>
+          <section
+            v-if="detailAsset.location === 'WIPE_STATION' || detailAsset.status === 'SANITIZED_PASS' || detailAsset.status === 'SANITIZED_FAIL'"
+            class="detail-section detail-section--sanitization"
+          >
+            <h3 class="detail-section-title">Sanitization Results</h3>
+            <p class="detail-section-desc">Read-only. Results are recorded by the external wipe software; our import tool inserts the result record.</p>
+            <template v-if="detailAsset.latest_sanitization_record_id">
+              <div class="detail-grid sanitization-results-readonly">
+                <div class="detail-item">
+                  <span class="detail-label">Result</span>
+                  <span class="badge" :data-status="detailAsset.latest_sanitization_result === 'PASS' ? 'SANITIZED_PASS' : 'SANITIZED_FAIL'">
+                    {{ detailAsset.latest_sanitization_result === 'PASS' ? 'Pass' : 'Fail' }}
+                  </span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Method</span>
+                  <span class="detail-value">{{ detailAsset.latest_sanitization_method || '—' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Tool used</span>
+                  <span class="detail-value">{{ detailAsset.latest_sanitization_tool_used || '—' }}</span>
                 </div>
               </div>
-              <div class="form-row">
-                <label>Method (optional)</label>
-                <input v-model="sanitizationMethod" type="text" class="text-input" placeholder="e.g. NIST wipe" />
-              </div>
-              <div class="form-row">
-                <label>Tool used (optional)</label>
-                <input v-model="sanitizationToolUsed" type="text" class="text-input" placeholder="e.g. Blanco" />
-              </div>
-              <p class="form-hint">Destination: {{ sanitizationResult === 'PASS' ? 'Clean Cage' : sanitizationResult === 'FAIL' ? 'Destruction' : '—' }}</p>
-            </div>
+            </template>
+            <p v-else class="sanitization-no-record">
+              No sanitization result recorded yet for this asset. Results are added when the external wipe software generates a report and the import tool inserts the record.
+            </p>
           </section>
 
           <section
@@ -627,9 +627,6 @@ const hasActiveFilters = computed(() => {
 })
 
 const selectedAssetIds = ref<Set<string>>(new Set())
-const sanitizationResult = ref<'PASS' | 'FAIL' | ''>('')
-const sanitizationMethod = ref('')
-const sanitizationToolUsed = ref('')
 
 const showCreateWorkOrderModal = ref(false)
 const createWorkOrderSubmitting = ref(false)
@@ -1228,7 +1225,26 @@ onMounted(async () => {
     filters.workOrder = 'none'
   }
 
-  load()
+  load().then(async () => {
+    // Open detail panel if asset ID is in query params (e.g., from workflow alert link)
+    const assetIdFromRoute = route.query.asset
+    if (assetIdFromRoute && typeof assetIdFromRoute === 'string') {
+      // Find the asset in the loaded list
+      let asset = assets.value.find(a => a.id === assetIdFromRoute)
+      if (!asset) {
+        // Asset not in current filtered results, fetch it directly
+        try {
+          asset = await getAsset(assetIdFromRoute)
+        } catch {
+          // Asset not found or error fetching, skip opening detail
+          return
+        }
+      }
+      if (asset) {
+        openDetail(asset as Record<string, unknown>)
+      }
+    }
+  })
 })
 
 onUnmounted(() => {

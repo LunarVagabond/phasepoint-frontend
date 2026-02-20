@@ -187,7 +187,7 @@ function clearFilters() {
 function openAssetDetail(row: Record<string, unknown>) {
   const assetId = row.asset_id as string
   if (assetId) {
-    router.push(`/employee-portal/assets/${assetId}`)
+    router.push({ name: 'Assets', query: { asset: assetId } })
   }
 }
 

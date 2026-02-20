@@ -110,3 +110,15 @@
   padding-left: 1.25rem;
 }
 
+/* History timeline: ensure space between time and event type */
+.timeline-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: baseline;
+
+  .time {
+    margin-right: 0.25rem;
+  }
+}
+

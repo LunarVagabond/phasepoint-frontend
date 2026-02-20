@@ -967,6 +967,11 @@ export interface AssetDetail extends AssetSummary {
   internal_notes?: string
   public_notes?: string
   updated_at: string
+  /** Set when a sanitization record exists (from external wipe tool / import). Read-only in UI. */
+  latest_sanitization_record_id?: string | null
+  latest_sanitization_result?: 'PASS' | 'FAIL' | null
+  latest_sanitization_method?: string | null
+  latest_sanitization_tool_used?: string | null
 }
 
 export async function getAsset(id: string): Promise<AssetDetail> {
