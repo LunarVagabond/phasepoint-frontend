@@ -1,5 +1,5 @@
 <template>
-  <div class="customer-layout-shell">
+  <div class="customer-layout-shell" :class="{ 'readonly-preview': isReadonlyPortal }">
     <header class="customer-topbar">
       <div class="topbar-left">
         <router-link :to="`${basePath}`" class="brand">Phasepoint</router-link>

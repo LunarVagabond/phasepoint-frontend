@@ -57,8 +57,34 @@ const props = withDefaults(defineProps<Props>(), {
     SANITIZED_FAIL: '#ef4444',
     DESTROYED: '#6366f1',
     RELEASED: '#3b82f6',
+    INTAKE: '#64748b',
+    DIRTY_CAGE: '#f59e0b',
+    WIPE_STATION: '#eab308',
+    CLEAN_CAGE: '#22c55e',
+    SHIPMENT_STAGING_AREA: '#3b82f6',
+    DESTRUCTION: '#a855f7',
+    SHIPPED: '#06b6d4',
   }),
 })
+
+const DEFAULT_COLORS: Record<string, string> = {
+  RECEIVED: '#94a3b8',
+  PENDING_SANITIZATION: '#f59e0b',
+  SANITIZED_PASS: '#10b981',
+  SANITIZED_FAIL: '#ef4444',
+  DESTROYED: '#6366f1',
+  RELEASED: '#3b82f6',
+  INTAKE: '#64748b',
+  DIRTY_CAGE: '#f59e0b',
+  WIPE_STATION: '#eab308',
+  CLEAN_CAGE: '#22c55e',
+  SHIPMENT_STAGING_AREA: '#3b82f6',
+  DESTRUCTION: '#a855f7',
+  SHIPPED: '#06b6d4',
+}
+const PALETTE = [
+  '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#8b5cf6',
+]
 
 const chartCanvas = ref<HTMLCanvasElement | null>(null)
 const chartLoaded = ref(false)
@@ -88,9 +114,14 @@ function createChart() {
     return
   }
   
-  const backgroundColors = labels.map((label) => {
-    const key = Object.keys(props.data).find((k) => formatLabel(k) === label)
-    return props.colors[key || ''] || '#94a3b8'
+  const dataKeys = Object.keys(props.data)
+  const backgroundColors = labels.map((label, index) => {
+    const key = dataKeys[index]
+    const explicit = key != null ? props.colors[key] : undefined
+    if (explicit) return explicit
+    const fromDefaults = key != null ? DEFAULT_COLORS[key] : undefined
+    if (fromDefaults) return fromDefaults
+    return PALETTE[index % PALETTE.length]
   })
 
   const config = {

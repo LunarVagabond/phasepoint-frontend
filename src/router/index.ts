@@ -35,6 +35,7 @@ const routes = [
       { path: 'batches', name: 'Batches', component: () => import('../views/BatchesListView.vue'), meta: { title: 'Batches' } },
       { path: 'audit', name: 'Audit', component: () => import('../views/AuditTrailView.vue'), meta: { title: 'Audit trail' } },
       { path: 'workflow-alerts', name: 'WorkflowAlerts', component: () => import('../views/WorkflowAlertsView.vue'), meta: { title: 'Workflow Alerts', requiresManager: true } },
+      { path: 'system-metrics', name: 'SystemMetrics', component: () => import('../views/SystemMetricsView.vue'), meta: { title: 'System Metrics', requiresManager: true } },
       { path: 'reports', name: 'Reports', component: () => import('../views/ReportsView.vue'), meta: { title: 'Reports' } },
       { path: 'customers/:customerId/context', name: 'CustomerContextInternal', component: () => import('../views/CustomerContextInternalView.vue'), meta: { title: 'Customer Context' } },
       { path: 'customers/:customerId', name: 'CustomerDetail', component: () => import('../views/CustomerDetailView.vue'), meta: { title: 'Customer Detail' } },

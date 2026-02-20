@@ -18,6 +18,7 @@ let LineElement: any = null
 let LineController: any = null
 let Tooltip: any = null
 let Legend: any = null
+let Filler: any = null
 
 async function loadChartJS() {
   try {
@@ -30,9 +31,10 @@ async function loadChartJS() {
     LineController = chartModule.LineController
     Tooltip = chartModule.Tooltip
     Legend = chartModule.Legend
-    
-    if (Chart && CategoryScale && LinearScale && PointElement && LineElement && LineController && Tooltip && Legend) {
-      Chart.register(CategoryScale, LinearScale, PointElement, LineElement, LineController, Tooltip, Legend)
+    Filler = chartModule.Filler
+
+    if (Chart && CategoryScale && LinearScale && PointElement && LineElement && LineController && Tooltip && Legend && Filler) {
+      Chart.register(CategoryScale, LinearScale, PointElement, LineElement, LineController, Tooltip, Legend, Filler)
       return true
     }
     return false

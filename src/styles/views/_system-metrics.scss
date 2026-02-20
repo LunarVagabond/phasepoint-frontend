@@ -1,0 +1,24 @@
+@use '../variables' as *;
+
+.system-metrics-page {
+  .metrics-section {
+    margin-bottom: $space-4;
+  }
+
+  .metrics-grid-two {
+    @media (max-width: 720px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+  }
+
+  .kpi-card-grid {
+    @media (max-width: 640px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+}

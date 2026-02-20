@@ -1800,6 +1800,67 @@ export async function getWorkflowAlerts(params?: {
   return r.json() as Promise<WorkflowAlert[]>
 }
 
+export interface SystemMetricsResponse {
+  kpis: {
+    total_assets_processed: number
+    active_work_orders: number
+    open_alerts: number
+    avg_turnaround_days: number | null
+    employee_count: number
+    customer_count: number
+  }
+  operations: {
+    assets_by_stage: Array<{ location: string; count: number }>
+    throughput_trends: Array<{ date: string; count: number }>
+    work_order_completion_rate: number
+  }
+  employees: Array<{
+    username: string
+    assets_processed: number
+    work_orders_completed: number
+    avg_turnaround_days: number | null
+    activity_count: number
+  }>
+  customers: Array<{
+    customer_id: string
+    customer_name: string
+    asset_count: number
+    avg_turnaround_days: number | null
+  }>
+  trends: {
+    daily: Array<{ date: string; metrics: Record<string, number> }>
+    weekly: Array<{ week: string; metrics: Record<string, number> }>
+    monthly: Array<{ month: string; metrics: Record<string, number> }>
+  }
+  compliance: {
+    sanitization_pass_rate: number
+    certificates_generated: number
+    audit_completeness: number
+  }
+  alerts?: {
+    opened_in_period: number | null
+    closed_in_period: number | null
+    avg_hours_to_close: number | null
+  }
+}
+
+export async function getSystemMetrics(params?: {
+  customer_id?: string
+  created_after?: string
+  created_before?: string
+  employee_id?: string
+}): Promise<SystemMetricsResponse> {
+  const queryParams = new URLSearchParams()
+  if (params?.customer_id) queryParams.set('customer_id', params.customer_id)
+  if (params?.created_after) queryParams.set('created_after', params.created_after)
+  if (params?.created_before) queryParams.set('created_before', params.created_before)
+  if (params?.employee_id) queryParams.set('employee_id', params.employee_id)
+  const url = `/reports/system-metrics/${queryParams.toString() ? '?' + queryParams.toString() : ''}`
+  const r = await request(url)
+  if (!r.ok) throw new Error('Failed to load system metrics')
+  return r.json() as Promise<SystemMetricsResponse>
+}
+
 /** Map internal audit event_type (enum) to customer-facing display text. Use everywhere we show event types to users. */
 export const AUDIT_EVENT_TYPE_DISPLAY: Record<string, string> = {
   INTAKE_REQUEST_CREATED: 'Request submitted',
@@ -2128,6 +2189,7 @@ export async function getIntakeRequestHistory(
     user: string | null
     old_value: unknown
     new_value: unknown
+    asset_id?: string | null
   }>
 > {
   const r = await request(`/intake-requests/${id}/history/`)

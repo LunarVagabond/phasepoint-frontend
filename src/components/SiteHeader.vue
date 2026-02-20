@@ -55,6 +55,7 @@
           <router-link v-if="!policyOnly" to="/employee-portal/audit" active-class="active">Audit</router-link>
           <a v-else href="#" class="disabled" @click.prevent>Audit</a>
           <router-link v-if="!policyOnly && isManager" to="/employee-portal/workflow-alerts" active-class="active">Workflow Alerts</router-link>
+          <router-link v-if="!policyOnly && isManager" to="/employee-portal/system-metrics" active-class="active">System Metrics</router-link>
         </div>
       </details>
       <span class="nav-sep" aria-hidden="true">|</span>
@@ -192,7 +193,7 @@ const isOperationsActive = computed(() => {
 const isReportsAuditActive = computed(() => {
   const name = route.name as string
   const path = route.path
-  return name === 'Reports' || name === 'Audit' || name === 'WorkflowAlerts' || path.startsWith('/employee-portal/reports') || path.startsWith('/employee-portal/audit') || path.startsWith('/employee-portal/workflow-alerts')
+  return name === 'Reports' || name === 'Audit' || name === 'WorkflowAlerts' || name === 'SystemMetrics' || path.startsWith('/employee-portal/reports') || path.startsWith('/employee-portal/audit') || path.startsWith('/employee-portal/workflow-alerts') || path.startsWith('/employee-portal/system-metrics')
 })
 
 const isDocsActive = computed(() => {

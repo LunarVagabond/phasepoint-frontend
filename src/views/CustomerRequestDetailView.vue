@@ -145,10 +145,13 @@
             <template v-if="item.type === 'history'">
               <div class="timeline-meta">
                 <span class="time">{{ formatDate(item.timestamp) }}</span>
-                <span class="event-type">{{ getEventTypeDisplay((item.data as { event_type: string }).event_type) }}</span>
-                <span v-if="(item.data as { user: string | null }).user" class="user">by {{ (item.data as { user: string | null }).user }}</span>
+                <span class="event-type">{{ getEventTypeDisplay((item.data as HistoryEventData).event_type) }}</span>
+                <span v-if="(item.data as HistoryEventData).user" class="user"> by {{ (item.data as HistoryEventData).user }}</span>
               </div>
               <ul class="payload-readable">
+                <template v-if="(item.data as HistoryEventData).event_type === 'ASSET_INTAKE' && (item.data as HistoryEventData).asset_id">
+                  <li><b>Asset ID:</b> {{ (item.data as HistoryEventData).asset_id }}</li>
+                </template>
                 <li v-for="(line, i) in formatEventDetailReadable(item.data as { old_value: unknown; new_value: unknown })" :key="i">{{ line }}</li>
               </ul>
             </template>
@@ -270,6 +273,14 @@ const isEmployeeView = computed(() => String(route.path).startsWith('/employee-p
 const currentStatusLabel = computed(() =>
   request.value ? getIntakeRequestStatusDisplay(request.value) : ''
 )
+interface HistoryEventData {
+  event_type: string
+  user: string | null
+  old_value: unknown
+  new_value: unknown
+  asset_id?: string | null
+}
+
 const history = ref<
   Array<{
     timestamp: string
@@ -277,6 +288,7 @@ const history = ref<
     user: string | null
     old_value: unknown
     new_value: unknown
+    asset_id?: string | null
   }>
 >([])
 const dropOffPreferredAt = ref('')
@@ -718,13 +730,19 @@ onUpdated(() => {
 .timeline-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: $space-2;
+  align-items: baseline;
+  gap: 0  $space-2;
   font-size: $font-size-sm;
   color: var(--color-text-muted);
 }
 
 .time {
   font-weight: 600;
+}
+
+.timeline-meta .time::after,
+.timeline-meta .event-type::after {
+  content: '\00a0';
 }
 
 .event-type {

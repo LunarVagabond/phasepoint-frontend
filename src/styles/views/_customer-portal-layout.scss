@@ -6,6 +6,13 @@
     radial-gradient(circle at 20% -10%, rgba(var(--color-primary-rgb, 37, 99, 235), 0.25), transparent 45%),
     radial-gradient(circle at 90% 0%, rgba(22, 163, 74, 0.2), transparent 35%),
     var(--color-background);
+
+  /* Read-only preview: outline entire customer view for separation from employee chrome */
+  &.readonly-preview {
+    margin: $space-4;
+    border: 2px solid var(--customer-preview-border);
+    border-radius: var(--radius-lg, 0.5rem);
+  }
 }
 
 .customer-topbar {
