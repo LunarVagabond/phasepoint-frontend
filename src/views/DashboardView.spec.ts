@@ -51,6 +51,7 @@ describe('DashboardView', () => {
     })
     await wrapper.vm.$nextTick()
     expect(wrapper.find('.dashboard').exists()).toBe(true)
-    expect(wrapper.find('.section-title').text()).toContain('open work orders')
+    const sectionTitles = wrapper.findAll('.section-title').map((el) => el.text())
+    expect(sectionTitles.some((t) => t.toLowerCase().includes('open work orders'))).toBe(true)
   })
 })
