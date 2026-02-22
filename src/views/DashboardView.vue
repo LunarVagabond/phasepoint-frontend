@@ -26,9 +26,13 @@
           <div class="throughput-card throughput-card-scrollable">
             <h3>Employee Metrics</h3>
             <div v-if="throughputData.processedByEmployee && throughputData.processedByEmployee.length > 0" class="employee-list-scrollable">
-              <div v-for="(emp, idx) in throughputData.processedByEmployee" :key="emp.intake_employee__username || idx" class="employee-item">
-                <span class="employee-name">{{ emp.intake_employee__username || 'Unknown' }}</span>
-                <span class="employee-count">{{ emp.count }} assets</span>
+              <div v-for="(emp, idx) in throughputData.processedByEmployee" :key="emp.intake_employee__username || emp.username || idx" class="employee-item employee-metrics-row">
+                <span class="employee-name">{{ emp.intake_employee__username || emp.username || 'Unknown' }}</span>
+                <span class="employee-counts">
+                  <span class="employee-count-intaked">{{ emp.assets_intaked ?? emp.count ?? 0 }} intaked</span>
+                  <span class="employee-count-sep">, </span>
+                  <span class="employee-count-wo">{{ emp.assets_on_work_orders ?? 0 }} on WOs</span>
+                </span>
               </div>
             </div>
             <p v-else class="modal-muted">No employee data available</p>
@@ -482,7 +486,7 @@ import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { createUser, updateUser, deleteUser, createCustomer, canSeeIntakeRequests, getIntakeRequests, searchUsAddresses, getWorkOrders, getKpis, getMyPerformance } from '../api'
 import DataTable from '../components/DataTable.vue'
-import type { UserSummary, CustomerSummary, IntakeRequestSummary, MeResponse, WorkOrderSummary } from '../api'
+import type { UserSummary, CustomerSummary, IntakeRequestSummary, MeResponse, WorkOrderSummary, KpiProcessedByEmployeeItem } from '../api'
 import type { DataTableColumn } from '../components/DataTable.vue'
 
 const router = useRouter()
@@ -1105,7 +1109,7 @@ async function loadThroughputMetrics() {
   throughputError.value = ''
   try {
     const kpiData = await getKpis('json') as {
-      processed_by_employee: Array<{ intake_employee__username: string | null; count: number }>
+      processed_by_employee: KpiProcessedByEmployeeItem[]
       assets_by_stage: Array<{ location: string; count: number }>
       open_alerts: number
     }

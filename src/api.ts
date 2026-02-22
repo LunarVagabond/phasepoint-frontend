@@ -1768,6 +1768,15 @@ export async function getKpis(format: 'json' | 'csv' | 'pdf' = 'json'): Promise<
   }
 }
 
+/** KPI report processed_by_employee item (dashboard Employee Metrics). */
+export interface KpiProcessedByEmployeeItem {
+  intake_employee__username: string | null
+  username?: string
+  count: number
+  assets_intaked?: number
+  assets_on_work_orders?: number
+}
+
 export interface MyPerformanceResponse {
   assets_intaken: number
   work_orders_assigned: number
@@ -1836,6 +1845,7 @@ export async function getWorkflowAlertCount(params?: { open_only?: boolean }): P
 
 export interface SystemMetricsResponse {
   kpis: {
+    total_assets_on_books?: number
     total_assets_processed: number
     active_work_orders: number
     open_alerts: number
@@ -1851,6 +1861,10 @@ export interface SystemMetricsResponse {
   employees: Array<{
     username: string
     assets_processed: number
+    assets_intaked?: number
+    assets_on_work_orders?: number
+    sanitization_records_count?: number
+    assets_shipped?: number
     work_orders_completed: number
     avg_turnaround_days: number | null
     activity_count: number

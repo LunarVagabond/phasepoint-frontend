@@ -90,7 +90,7 @@
           <BarChartMetric
             :labels="employeeLabels"
             :values="employeeValues"
-            label="Assets processed"
+            label="Assets attributed"
             horizontal
           />
           <div v-if="store.employees.length > 0" class="metric-table-wrap">
@@ -98,6 +98,7 @@
               :columns="employeeColumns"
               :data="store.employees"
               :row-key="(row, _i) => (row as { username: string }).username"
+              :total-row="employeeTotalRow"
             />
           </div>
         </MetricsPanel>
@@ -114,6 +115,7 @@
           <ScrollableMetricList
             :items="customerListItems"
             :key-fn="(item, i) => item.label + i"
+            :total-item="customerTotalItem"
           />
         </MetricsPanel>
       </section>
@@ -164,6 +166,7 @@ const kpiItems = computed(() => {
   const k = store.kpis
   if (!k) return []
   return [
+    { label: 'On Our Books', value: k.total_assets_on_books ?? '—' },
     { label: 'Assets Processed', value: k.total_assets_processed },
     { label: 'Active Work Orders', value: k.active_work_orders },
     { label: 'Open Alerts', value: k.open_alerts },
@@ -200,11 +203,31 @@ const throughputDatasets = computed(() => {
 
 const employeeColumns = [
   { key: 'username', label: 'Employee', type: 'strong' as const },
-  { key: 'assets_processed', label: 'Assets processed' },
+  { key: 'assets_processed', label: 'Assets attributed' },
+  { key: 'assets_intaked', label: 'Assets intaked' },
+  { key: 'assets_on_work_orders', label: 'Assets on WOs' },
+  { key: 'sanitization_records_count', label: 'Sanitizations' },
+  { key: 'assets_shipped', label: 'Assets shipped' },
   { key: 'work_orders_completed', label: 'Work orders completed' },
   { key: 'avg_turnaround_days', label: 'Avg turnaround (days)' },
   { key: 'activity_count', label: 'Activity count' },
 ]
+const employeeTotalRow = computed(() => {
+  const emp = store.employees as Array<Record<string, unknown>>
+  if (!emp.length) return null
+  const sum = (key: string) => emp.reduce((s, r) => s + (Number(r[key]) || 0), 0)
+  return {
+    username: 'Total',
+    assets_processed: sum('assets_processed'),
+    assets_intaked: sum('assets_intaked'),
+    assets_on_work_orders: sum('assets_on_work_orders'),
+    sanitization_records_count: sum('sanitization_records_count'),
+    assets_shipped: sum('assets_shipped'),
+    work_orders_completed: sum('work_orders_completed'),
+    avg_turnaround_days: null,
+    activity_count: sum('activity_count'),
+  }
+})
 const employeeLabels = computed(() => store.employees.map((e) => e.username))
 const employeeValues = computed(() => store.employees.map((e) => e.assets_processed))
 
@@ -213,6 +236,11 @@ const customerValues = computed(() => store.customers.map((c) => c.asset_count))
 const customerListItems = computed(() =>
   store.customers.map((c) => ({ label: c.customer_name, value: c.asset_count }))
 )
+const customerTotalItem = computed(() => {
+  const total = store.customers.reduce((s, c) => s + (c.asset_count ?? 0), 0)
+  if (store.customers.length === 0) return null
+  return { label: 'Total', value: total }
+})
 
 const trendDailyLabels = computed(() => store.trends.daily.map((d) => d.date))
 const trendDailyDatasets = computed(() => {

@@ -30,6 +30,15 @@
           </td>
         </tr>
       </tbody>
+      <tfoot v-if="totalRow">
+        <tr class="metric-table-total-row">
+          <td v-for="col in columns" :key="col.key">
+            <span v-if="col.type === 'strong'" class="metric-table-strong">{{ getCell(totalRow, col.key) }}</span>
+            <span v-else>{{ getCell(totalRow, col.key) }}</span>
+          </td>
+          <td v-if="linkColumn" class="metric-table-link-col"></td>
+        </tr>
+      </tfoot>
     </table>
     <p v-if="!loading && data.length === 0" class="metric-table-empty">No data</p>
     <p v-if="loading" class="metric-table-loading">Loading…</p>
@@ -50,10 +59,13 @@ const props = withDefaults(
     rowKey?: (row: Record<string, unknown>, index: number) => string | number
     linkColumn?: { key: string; label: string; to: (row: Record<string, unknown>) => string }
     loading?: boolean
+    /** Optional total row shown at bottom with distinct styling */
+    totalRow?: Record<string, unknown> | null
   }>(),
   {
     loading: false,
     rowKey: (_, index) => index,
+    totalRow: undefined,
   }
 )
 
@@ -107,6 +119,16 @@ function getLink(row: Record<string, unknown>): string | undefined {
 
   tr.clickable:hover {
     background: var(--color-row-hover);
+  }
+}
+
+.metric-table-total-row {
+  background: var(--color-surface);
+  font-weight: 600;
+
+  td {
+    border-top: 2px solid var(--color-border);
+    padding-top: $space-3;
   }
 }
 

@@ -9,8 +9,12 @@
         <span class="metric-list-label">{{ item.label }}</span>
         <span class="metric-list-value">{{ item.value }}</span>
       </li>
+      <li v-if="totalItem" class="metric-list-row metric-list-total-row">
+        <span class="metric-list-label">{{ totalItem.label }}</span>
+        <span class="metric-list-value">{{ totalItem.value }}</span>
+      </li>
     </ul>
-    <p v-if="items.length === 0 && !loading" class="metric-list-empty">No data</p>
+    <p v-if="items.length === 0 && !totalItem && !loading" class="metric-list-empty">No data</p>
     <p v-if="loading" class="metric-list-loading">Loading…</p>
   </div>
 </template>
@@ -21,10 +25,13 @@ withDefaults(
     items: Array<{ label: string; value: string | number }>
     loading?: boolean
     keyFn?: (item: { label: string; value: string | number }, index: number) => string | number
+    /** Optional total row shown at bottom with distinct styling */
+    totalItem?: { label: string; value: string | number } | null
   }>(),
   {
     loading: false,
     keyFn: (_, i) => i,
+    totalItem: undefined,
   }
 )
 </script>
@@ -56,6 +63,12 @@ withDefaults(
   &:last-child {
     border-bottom: none;
   }
+}
+
+.metric-list-total-row {
+  background: var(--color-surface);
+  font-weight: 600;
+  border-top: 2px solid var(--color-border);
 }
 
 .metric-list-label {
