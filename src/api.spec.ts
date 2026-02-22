@@ -205,8 +205,8 @@ describe('SHIPMENT_DESTINATION_TYPES', () => {
 
 describe('INTAKE_REQUEST_ASSET_TYPES', () => {
   it('includes PHONE, LAPTOP, TABLET with labels', () => {
-    expect(INTAKE_REQUEST_ASSET_TYPES.some((a) => a.value === 'LAPTOP' && a.label === 'Laptops')).toBe(true)
-    expect(INTAKE_REQUEST_ASSET_TYPES.some((a) => a.value === 'PHONE' && a.label === 'Phones')).toBe(true)
+    expect(INTAKE_REQUEST_ASSET_TYPES.some((a) => a.value === 'LAPTOP' && a.label === 'Laptop')).toBe(true)
+    expect(INTAKE_REQUEST_ASSET_TYPES.some((a) => a.value === 'PHONE' && a.label === 'Phone')).toBe(true)
     expect(INTAKE_REQUEST_ASSET_TYPES.some((a) => a.value === 'OTHER')).toBe(true)
   })
 })

@@ -207,8 +207,10 @@ const route = useRoute()
 const router = useRouter()
 const isReadonlyPortal = computed(() => route.path.includes('/employee-portal/customers/') || Boolean(route.meta.customerPortalReadonly))
 
-const sustainabilityChartData = computed(() => {
-  if (!impact.value) return {}
+const sustainabilityChartData = computed<Record<string, number>>(() => {
+  if (!impact.value) {
+    return { RECYCLED: 0, DISPOSED: 0, REUSED: 0 }
+  }
   return {
     RECYCLED: impact.value.recycled_weight_kg || 0,
     DISPOSED: impact.value.disposed_weight_kg || 0,
@@ -401,18 +403,6 @@ function formatStatus(status: string) {
 }
 
 // getLocationLabel is imported from api.ts
-
-const donutStyle = computed(() => {
-  const recycled = impact.value?.recycled_percent ?? 0
-  const disposed = impact.value?.disposed_percent ?? 0
-  const reused = impact.value?.reused_percent ?? 0
-  const recycledEnd = recycled
-  const disposedEnd = recycled + disposed
-  const reusedEnd = recycled + disposed + reused
-  return {
-    background: `conic-gradient(#10b981 0% ${recycledEnd}%, #ef4444 ${recycledEnd}% ${disposedEnd}%, #3b82f6 ${disposedEnd}% ${reusedEnd}%, #cbd5e1 ${reusedEnd}% 100%)`,
-  }
-})
 
 const estimatedCarbonKg = computed(() => {
   // ITAD Carbon Elimination Calculation based on industry standards:

@@ -5,7 +5,7 @@
       subtitle="Organization-wide operations, employee performance, customer metrics, and compliance."
     >
       <template #actions>
-        <router-link v-if="store.kpis?.open_alerts != null && store.kpis.open_alerts > 0" to="/employee-portal/workflow-alerts" class="alerts-link">
+        <router-link v-if="store.kpis?.open_alerts != null && store.kpis.open_alerts > 0" :to="{ path: '/employee-portal/assets', query: { has_open_alert: '1' } }" class="alerts-link">
           Open Alerts: {{ store.kpis.open_alerts }}
         </router-link>
       </template>
@@ -66,7 +66,7 @@
 
       <section v-if="store.alerts != null" class="metrics-section">
         <MetricsPanel title="Alert metrics (selected period)">
-          <p class="alerts-desc">Track whether the team is improving or losing efficiency on workflow alerts.</p>
+          <p class="alerts-desc">Track whether the team is improving or losing efficiency on workflow alerts. View and close open alerts on the Assets page.</p>
           <div class="alerts-metrics-grid">
             <div class="alerts-metric">
               <span class="alerts-metric-label">Opened in period</span>
@@ -81,7 +81,7 @@
               <span class="alerts-metric-value">{{ store.alerts.avg_hours_to_close != null ? `${store.alerts.avg_hours_to_close}h` : '—' }}</span>
             </div>
           </div>
-          <router-link to="/employee-portal/workflow-alerts" class="alerts-panel-link">View open alerts</router-link>
+          <router-link :to="{ path: '/employee-portal/assets', query: { has_open_alert: '1' } }" class="alerts-panel-link">View open alerts on Assets</router-link>
         </MetricsPanel>
       </section>
 
@@ -135,7 +135,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { getCustomers, getUsersByType } from '../api'
 import { useSystemMetricsStore } from '../stores/systemMetrics'
 import MetricsPageHeader from '../components/metrics/MetricsPageHeader.vue'
 import MetricsFilterBar from '../components/metrics/MetricsFilterBar.vue'
@@ -149,8 +150,15 @@ import TrendLineChart from '../components/charts/TrendLineChart.vue'
 
 const store = useSystemMetricsStore()
 
-const customerOptions = computed(() => [])
-const employeeOptions = computed(() => [])
+const customerList = ref<Awaited<ReturnType<typeof getCustomers>>>([])
+const employeeList = ref<Awaited<ReturnType<typeof getUsersByType>>>([])
+
+const customerOptions = computed(() =>
+  customerList.value.map((c) => ({ id: c.id, name: c.name }))
+)
+const employeeOptions = computed(() =>
+  employeeList.value.map((u) => ({ id: u.id, username: u.username }))
+)
 
 const kpiItems = computed(() => {
   const k = store.kpis
@@ -221,6 +229,12 @@ const trendDailyDatasets = computed(() => {
 
 onMounted(() => {
   store.fetchMetrics()
+  getCustomers()
+    .then((list) => { customerList.value = list })
+    .catch(() => {})
+  getUsersByType('EMPLOYEE')
+    .then((list) => { employeeList.value = list })
+    .catch(() => {})
 })
 </script>
 

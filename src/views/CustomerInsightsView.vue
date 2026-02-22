@@ -133,7 +133,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { getCustomerAssets, getCustomerAuditEvents, getCustomerCertificateOfDestruction } from '../api'
+import { getCustomerAssets, getCustomerCertificateOfDestruction } from '../api'
 import type { AssetSummary } from '../api'
 import TrendLineChart from '../components/charts/TrendLineChart.vue'
 

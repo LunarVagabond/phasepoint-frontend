@@ -78,7 +78,7 @@
             <tr>
               <th scope="row">Assigned To</th>
               <td>
-                <div v-if="isEmployee && isAssignedToMe && workOrder.status !== 'COMPLETED'" class="assigned-to-select-wrapper">
+                <div v-if="isEmployee && (isAssignedToMe || isManager) && workOrder.status !== 'COMPLETED' && workOrder.status !== 'CANCELLED'" class="assigned-to-select-wrapper">
                   <FilterableSelect
                     v-model="workOrderAssignedToEdit"
                     :options="employeeSelectOptions"
@@ -88,6 +88,7 @@
                     @update:modelValue="updateWorkOrderAssignedTo"
                   />
                   <span v-if="savingAssignedTo" class="assigned-to-saving-indicator">Saving…</span>
+                  <span v-if="isManager && !isAssignedToMe" class="assigned-to-hint">Managers can reassign when an employee calls out.</span>
                 </div>
                 <span v-else>{{ workOrder.assigned_to_username }}</span>
               </td>
@@ -596,6 +597,10 @@ const isAssignedToMe = computed(() => {
   if (!me.value || !workOrder.value) return false
   return String(workOrder.value.assigned_to) === String(me.value.id)
 })
+
+const isManager = computed(() =>
+  (me.value?.groups_display || []).map((g: string) => g.toLowerCase()).includes('manager')
+)
 
 const canCompleteWorkOrder = computed(() => {
   if (!workOrder.value) return false

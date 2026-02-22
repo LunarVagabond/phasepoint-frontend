@@ -115,7 +115,7 @@ function createChart() {
   }
   
   const dataKeys = Object.keys(props.data)
-  const backgroundColors = labels.map((label, index) => {
+  const backgroundColors = labels.map((_label, index) => {
     const key = dataKeys[index]
     const explicit = key != null ? props.colors[key] : undefined
     if (explicit) return explicit
@@ -149,7 +149,7 @@ function createChart() {
         },
         tooltip: {
           callbacks: {
-            label: (context) => {
+            label: (context: { label?: string; parsed?: number }) => {
               const label = context.label || ''
               const value = context.parsed || 0
               const total = values.reduce((a, b) => a + b, 0)

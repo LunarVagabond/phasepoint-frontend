@@ -83,8 +83,8 @@ function createChart() {
         },
         tooltip: {
           callbacks: {
-            label: (context) => {
-              const value = context.parsed.x ?? context.parsed.y ?? 0
+            label: (context: { parsed?: { x?: number; y?: number }; label?: string }) => {
+              const value = context.parsed?.x ?? context.parsed?.y ?? 0
               const label = context.label || ''
               return `${label}: ${value}`
             },

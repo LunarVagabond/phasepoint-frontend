@@ -261,7 +261,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, onUpdated, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { getIntakeRequest, getIntakeRequestHistory, getIntakeRequestAssets, getIntakeRequestWorkOrders, getEventTypeDisplay, getIntakeRequestStatusDisplay, updateIntakeRequest, createStatusRequest, createStatusUpdate, getStatusRequests, respondToStatusRequest as respondToStatusRequestAPI, INTAKE_REQUEST_ASSET_TYPES, type IntakeRequestSummary, type IntakeRequestAssetSummary, type WorkOrderSummary, type StatusRequest } from '../api'
+import { getIntakeRequest, getIntakeRequestHistory, getIntakeRequestAssets, getIntakeRequestWorkOrders, getEventTypeDisplay, getIntakeRequestStatusDisplay, updateIntakeRequest, createStatusRequest, createStatusUpdate, getStatusRequests, respondToStatusRequest as respondToStatusRequestAPI, type IntakeRequestSummary, type IntakeRequestAssetSummary, type WorkOrderSummary, type StatusRequest } from '../api'
 import { formatAssetId } from '../utils/format'
 
 const route = useRoute()
@@ -368,11 +368,6 @@ function formatDate(iso: string) {
     return iso
   }
 }
-
-function assetTypeLabel(code: string): string {
-  return INTAKE_REQUEST_ASSET_TYPES.find((o) => o.value === code)?.label ?? code
-}
-
 
 function logisticsLabel(r: IntakeRequestSummary): string {
   const type = r.delivery_type || 'PICKUP'

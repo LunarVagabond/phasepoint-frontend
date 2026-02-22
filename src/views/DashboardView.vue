@@ -3,7 +3,7 @@
     <section v-if="showThroughputMetrics" class="dashboard-section">
       <div class="section-head">
         <h2 class="section-title">Throughput Metrics</h2>
-        <router-link v-if="!throughputLoading && !throughputError" to="/employee-portal/workflow-alerts" class="throughput-alerts-inline">
+        <router-link v-if="!throughputLoading && !throughputError" :to="{ path: '/employee-portal/assets', query: { has_open_alert: '1' } }" class="throughput-alerts-inline">
           <span class="alert-label-inline">Open Alerts:</span>
           <span class="alert-count-inline">{{ throughputData.openAlerts || 0 }}</span>
         </router-link>

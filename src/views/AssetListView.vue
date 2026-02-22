@@ -1,5 +1,11 @@
 <template>
   <div class="assets">
+    <div class="assets-page-header">
+      <h1 class="assets-page-title">Assets</h1>
+      <span v-if="openAlertCount !== null" class="open-alerts-count">
+        {{ openAlertCount }} open alert{{ openAlertCount !== 1 ? 's' : '' }}
+      </span>
+    </div>
     <div v-if="intakeBatch" class="intake-batch-banner">
       <span class="banner-text">Showing intake batch by <strong>{{ intakeBatch.created_by_username }}</strong> on {{ formatDate(intakeBatch.created_at) }} ({{ intakeBatch.asset_count }} assets)</span>
       <router-link to="/employee-portal/assets" class="banner-clear">Show all assets</router-link>
@@ -9,7 +15,7 @@
         v-model="searchQuery"
         type="search"
         class="search-input"
-        placeholder="Search by ID, serial, customer, status, location…"
+        placeholder="Search by ID, serial, customer, work order, status, location…"
         aria-label="Search assets"
       />
       <div v-if="selectedAssetIds.size > 0" class="bulk-action-buttons">
@@ -31,15 +37,22 @@
     </div>
     <div class="filters-bar">
       <div class="filters-row">
-        <div class="filter-group">
-          <FilterableSelect
-            v-model="filters.workOrder"
-            :options="workOrderFilterOptions"
-            placeholder="All Work Orders"
-            search-placeholder="Search work orders…"
-            class="filter-select"
-            @update:modelValue="applyFilters"
-          />
+        <div v-if="!workOrderId" class="filter-group filter-group-switch">
+          <label class="filter-switch-wrap">
+            <input v-model="filters.onlyUnassigned" type="checkbox" class="filter-switch-input" @change="applyFilters" />
+            <span class="filter-switch-track" aria-hidden="true"></span>
+            <span class="filter-switch-label">No Work Order</span>
+          </label>
+        </div>
+        <div v-else class="filter-group">
+          <span class="filter-viewing-wo">Viewing work order (from link)</span>
+        </div>
+        <div class="filter-group filter-group-switch">
+          <label class="filter-switch-wrap">
+            <input v-model="filters.hasOpenAlert" type="checkbox" class="filter-switch-input" @change="applyFilters" />
+            <span class="filter-switch-track" aria-hidden="true"></span>
+            <span class="filter-switch-label">Open Alerts</span>
+          </label>
         </div>
         <div class="filter-group">
           <select v-model="filters.status" class="filter-select" @change="applyFilters">
@@ -109,7 +122,38 @@
       :is-row-selectable="isAssetSelectable"
       :sticky-header="true"
       @update:selected-row-keys="handleSelectionUpdate"
-    />
+    >
+      <template #cell-id="{ row }">
+        <span class="asset-id-cell">
+          <span v-if="row.has_open_alert" class="asset-alert-icon" title="Has open workflow alert" aria-label="Has open workflow alert">!</span>
+          <strong>{{ formatAssetId(String(row.id)) }}</strong>
+        </span>
+      </template>
+      <template #cell-work_order_number="{ row }">
+        <router-link
+          v-if="row.work_order_id"
+          :to="{ name: 'WorkOrderDetail', params: { id: String(row.work_order_id) } }"
+          class="asset-cell-link"
+          @click.stop
+        >
+          <span class="asset-cell-link-icon" aria-hidden="true">↗</span>
+          {{ row.work_order_number || 'Work order' }}
+        </router-link>
+        <span v-else>—</span>
+      </template>
+      <template #cell-customer_name="{ row }">
+        <router-link
+          v-if="row.customer_id"
+          :to="{ name: 'CustomerDetail', params: { customerId: String(row.customer_id) } }"
+          class="asset-cell-link"
+          @click.stop
+        >
+          <span class="asset-cell-link-icon" aria-hidden="true">↗</span>
+          {{ row.customer_name || '—' }}
+        </router-link>
+        <span v-else>{{ row.customer_name || '—' }}</span>
+      </template>
+    </DataTable>
     <div v-if="!loading && assetTotalCount > 0" class="assets-pagination">
       <span class="pagination-info">
         {{ (assetPage - 1) * ASSET_PAGE_SIZE + 1 }}–{{ Math.min(assetPage * ASSET_PAGE_SIZE, assetTotalCount) }} of {{ assetTotalCount }}
@@ -256,6 +300,18 @@
             <button type="button" class="drawer-close" aria-label="Close" @click="closeDetail">×</button>
           </div>
           <div class="drawer-content">
+          <div v-if="detailAsset.open_workflow_alert" class="drawer-alert-banner">
+            <span class="drawer-alert-icon" aria-hidden="true">!</span>
+            <span class="drawer-alert-message">{{ detailAsset.open_workflow_alert.message }}</span>
+            <button
+              type="button"
+              class="btn-close-alert-drawer"
+              :disabled="closingAlertId === detailAsset.open_workflow_alert.id"
+              @click="closeDrawerAlert"
+            >
+              {{ closingAlertId === detailAsset.open_workflow_alert.id ? 'Closing…' : 'Close' }}
+            </button>
+          </div>
           <section class="detail-section detail-section--asset-info">
             <div class="detail-grid">
             <div class="detail-item">
@@ -515,6 +571,8 @@ import {
   getAssets,
   getCustomers,
   getAsset,
+  getWorkflowAlertCount,
+  resolveWorkflowAlert,
   updateAsset,
   updateAssetIdentifyingInfo,
   getIntakeBatch,
@@ -530,8 +588,6 @@ import {
 } from '../api'
 import type { WorkOrderSummary, CustomerAssetIncident } from '../api'
 import DataTable from '../components/DataTable.vue'
-import FilterableSelect from '../components/FilterableSelect.vue'
-import type { FilterableOption } from '../components/FilterableSelect.vue'
 import { getAuditEventDisplayText } from '../api'
 import type { AssetSummary, AssetDetail, IntakeBatchSummary } from '../api'
 import type { DataTableColumn } from '../components/DataTable.vue'
@@ -591,7 +647,9 @@ const intakeBatch = ref<IntakeBatchSummary | null>(null)
 const assetAuditEvents = ref<import('../api').AuditEventSummary[]>([])
 
 const filters = reactive({
-  workOrder: 'none', // Default to "No Work Order" so employees see pending items
+  workOrder: '', // '' = all, 'none' = unassigned only (set by toggle)
+  onlyUnassigned: false, // toggle: when true, filter to assets without work order
+  hasOpenAlert: false,
   status: '',
   location: '',
   customerId: '',
@@ -599,7 +657,9 @@ const filters = reactive({
   createdBefore: '',
 })
 
-const allWorkOrders = ref<WorkOrderSummary[]>([]) // For the filter dropdown - shows ALL work orders
+const openAlertCount = ref<number | null>(null)
+const closingAlertId = ref<string | null>(null)
+
 const myWorkOrders = ref<WorkOrderSummary[]>([]) // For the "Add to Work Order" modal - shows only user's work orders
 const currentUserId = ref<string | null>(null)
 const me = ref<Awaited<ReturnType<typeof getMe>> | null>(null)
@@ -617,7 +677,8 @@ const managerUpdateError = ref('')
 
 const hasActiveFilters = computed(() => {
   return !!(
-    (filters.workOrder && filters.workOrder !== 'none') ||
+    filters.onlyUnassigned ||
+    filters.hasOpenAlert ||
     filters.status ||
     filters.location ||
     filters.customerId ||
@@ -676,18 +737,19 @@ async function load() {
     const q = searchQuery.value.trim()
     const hasSearch = q.length > 0
     if (hasSearch) {
-      // When searching, ignore all selectable filters so results match the search (e.g. UUID) regardless of work order, status, etc.
+      // When searching, include search; other filters still apply
       params.search = q
-    } else {
-      if (intakeBatchId.value) {
-        params.intake_batch = intakeBatchId.value
-      }
-      if (workOrderId.value) {
-        params.work_order = workOrderId.value
-      } else if (filters.workOrder) {
-        // Handle "none" value for filtering assets without a work order
-        params.work_order = filters.workOrder === 'none' ? 'none' : filters.workOrder
-      }
+    }
+    if (!hasSearch && intakeBatchId.value) {
+      params.intake_batch = intakeBatchId.value
+    }
+    if (workOrderId.value) {
+      params.work_order = workOrderId.value
+    } else if (filters.onlyUnassigned) {
+      params.work_order = 'none'
+    }
+    if (filters.hasOpenAlert) params.has_open_alert = true
+    if (!hasSearch) {
       if (filters.status) params.status = filters.status
       if (filters.location) params.location = filters.location
       if (filters.customerId) params.customer_id = filters.customerId
@@ -731,45 +793,6 @@ async function load() {
     loading.value = false
   }
 }
-
-async function loadAllWorkOrders() {
-  try {
-    // Fetch ALL work orders (no assigned_to filter)
-    const [createdOrders, inProgressOrders, pausedOrders, completedOrders, cancelledOrders] = await Promise.all([
-      getWorkOrders({ status: 'CREATED' }),
-      getWorkOrders({ status: 'IN_PROGRESS' }),
-      getWorkOrders({ status: 'PAUSED' }),
-      getWorkOrders({ status: 'COMPLETED' }),
-      getWorkOrders({ status: 'CANCELLED' }),
-    ])
-    // Combine and deduplicate
-    const allOrders = [...createdOrders, ...inProgressOrders, ...pausedOrders, ...completedOrders, ...cancelledOrders]
-    const uniqueOrders = Array.from(
-      new Map(allOrders.map((wo) => [wo.id, wo])).values()
-    )
-    allWorkOrders.value = uniqueOrders.sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    )
-  } catch {
-    allWorkOrders.value = []
-  }
-}
-
-const workOrderFilterOptions = computed<FilterableOption[]>(() => {
-  const options: FilterableOption[] = [
-    { value: '', label: 'All Work Orders' },
-    { value: 'none', label: 'No Work Order' },
-  ]
-  
-  allWorkOrders.value.forEach((wo) => {
-    options.push({
-      value: wo.id,
-      label: `${wo.work_order_number} (${wo.asset_count} assets)`,
-    })
-  })
-  
-  return options
-})
 
 async function loadMyWorkOrders() {
   if (!currentUserId.value) return
@@ -863,14 +886,15 @@ function goToAssetPage(p: number) {
 }
 
 function clearFilters() {
-  filters.workOrder = 'none' // Reset to default "No Work Order"
+  filters.workOrder = ''
+  filters.onlyUnassigned = false
+  filters.hasOpenAlert = false
   filters.status = ''
   filters.location = ''
   filters.customerId = ''
   filters.createdAfter = ''
   filters.createdBefore = ''
   
-  // Remove work_order from URL query params if it exists
   if (workOrderId.value) {
     const query = { ...route.query }
     delete query.work_order
@@ -890,9 +914,7 @@ watch([intakeBatchId, workOrderId], () => {
   loading.value = true
   selectedAssetIds.value = new Set()
   assetPage.value = 1
-  if (workOrderId.value) {
-    filters.workOrder = workOrderId.value
-  }
+  filters.workOrder = workOrderId.value || ''
   load()
 })
 
@@ -918,6 +940,37 @@ async function loadWorkOrdersForModal() {
     await loadMyWorkOrders() // Load only user's work orders for the modal
   } finally {
     loadingWorkOrders.value = false
+  }
+}
+
+async function closeDrawerAlert() {
+  const asset = detailAsset.value
+  const alert = asset?.open_workflow_alert
+  if (!alert?.id) return
+  closingAlertId.value = alert.id
+  try {
+    await resolveWorkflowAlert(alert.id)
+    const updated = await getAsset(detailAssetId.value!)
+    detailAsset.value = updated
+    const idx = assets.value.findIndex((a) => a.id === detailAssetId.value)
+    if (idx !== -1) {
+      assets.value = [
+        ...assets.value.slice(0, idx),
+        { ...assets.value[idx], has_open_alert: false, open_workflow_alert: null },
+        ...assets.value.slice(idx + 1),
+      ]
+    }
+    openAlertCount.value = openAlertCount.value != null ? Math.max(0, openAlertCount.value - 1) : null
+    try {
+      const { count } = await getWorkflowAlertCount()
+      openAlertCount.value = count
+    } catch {
+      // keep decremented value
+    }
+  } catch (e) {
+    showError(e instanceof Error ? e.message : 'Failed to close alert')
+  } finally {
+    closingAlertId.value = null
   }
 }
 
@@ -1209,20 +1262,24 @@ onMounted(async () => {
     const userData = await getMe()
     me.value = userData
     currentUserId.value = userData.id
-    await loadAllWorkOrders()
   } catch {
     // User info not available, continue without it
+  }
+
+  // Open alert count for header
+  try {
+    const { count } = await getWorkflowAlertCount()
+    openAlertCount.value = count
+  } catch {
+    openAlertCount.value = null
   }
 
   // Sync URL params to filters
   if (workOrderId.value) {
     filters.workOrder = workOrderId.value
-  } else if (intakeBatchId.value) {
-    // When viewing by intake batch, show all assets in the batch (do not default to "No Work Order")
-    filters.workOrder = ''
-  } else {
-    // Default to "No Work Order" filter when no URL param
-    filters.workOrder = 'none'
+  }
+  if (route.query.has_open_alert === '1' || route.query.has_open_alert === 'true') {
+    filters.hasOpenAlert = true
   }
 
   load().then(async () => {

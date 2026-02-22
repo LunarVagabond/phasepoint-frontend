@@ -55,7 +55,7 @@ const props = defineProps<Props>()
 const timelineStages = computed<TimelineStage[]>(() => {
   let foundCurrent = false
   
-  return props.stages.map((stage, index) => {
+  return props.stages.map((stage) => {
     const isCurrent = stage.key === props.currentStage
     const isCompleted = foundCurrent === false && !isCurrent
     

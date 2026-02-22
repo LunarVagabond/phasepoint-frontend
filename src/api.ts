@@ -70,6 +70,12 @@ export interface CustomerSummary {
   created_at: string
 }
 
+export interface OpenWorkflowAlert {
+  id: string
+  message: string
+  alert_type: string
+}
+
 export interface AssetSummary {
   id: string
   manufacturer_model: string
@@ -85,6 +91,8 @@ export interface AssetSummary {
   work_order_number?: string | null
   work_order_assigned_to_username?: string | null
   shipment_id?: string | null
+  has_open_alert?: boolean
+  open_workflow_alert?: OpenWorkflowAlert | null
   created_at: string
 }
 
@@ -860,9 +868,11 @@ export async function getAssets(params?: {
   created_before?: string
   /** When true, only return assets not assigned to any shipment. */
   not_in_shipment?: boolean
+  /** When true, only return assets that have an open workflow alert. */
+  has_open_alert?: boolean
   page?: number
   page_size?: number
-  /** Server-side search (ID, serial, model, customer, intake user). */
+  /** Server-side search (ID, serial, model, customer, work order, intake user). */
   search?: string
 }): Promise<AssetsListResponse> {
   const q = new URLSearchParams()
@@ -874,6 +884,7 @@ export async function getAssets(params?: {
   if (params?.created_after) q.set('created_after', params.created_after)
   if (params?.created_before) q.set('created_before', params.created_before)
   if (params?.not_in_shipment) q.set('not_in_shipment', '1')
+  if (params?.has_open_alert) q.set('has_open_alert', '1')
   if (params?.page != null) q.set('page', String(params.page))
   if (params?.page_size != null) q.set('page_size', String(params.page_size))
   if (params?.search != null && params.search !== '') q.set('search', params.search)
@@ -972,6 +983,8 @@ export interface AssetDetail extends AssetSummary {
   latest_sanitization_result?: 'PASS' | 'FAIL' | null
   latest_sanitization_method?: string | null
   latest_sanitization_tool_used?: string | null
+  /** First open workflow alert on this asset, if any. */
+  open_workflow_alert?: OpenWorkflowAlert | null
 }
 
 export async function getAsset(id: string): Promise<AssetDetail> {
@@ -1798,6 +1811,27 @@ export async function getWorkflowAlerts(params?: {
   const r = await request(url)
   if (!r.ok) throw new Error('Failed to load workflow alerts')
   return r.json() as Promise<WorkflowAlert[]>
+}
+
+export async function resolveWorkflowAlert(alertId: string): Promise<WorkflowAlert> {
+  const r = await request(`/reports/workflow-alerts/${alertId}/resolve/`, {
+    method: 'POST',
+  })
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}))
+    throw new Error((err as { detail?: string }).detail || 'Failed to close alert')
+  }
+  return r.json() as Promise<WorkflowAlert>
+}
+
+export async function getWorkflowAlertCount(params?: { open_only?: boolean }): Promise<{ count: number }> {
+  const q = new URLSearchParams()
+  if (params?.open_only !== false) q.set('open_only', '1')
+  const query = q.toString()
+  const url = '/reports/workflow-alerts/count/' + (query ? '?' + query : '')
+  const r = await request(url)
+  if (!r.ok) throw new Error('Failed to get workflow alert count')
+  return r.json() as Promise<{ count: number }>
 }
 
 export interface SystemMetricsResponse {
