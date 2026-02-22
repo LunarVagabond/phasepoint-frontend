@@ -221,6 +221,86 @@
   color: var(--color-primary);
 }
 
+/* Employee Metrics table (manager dashboard) */
+.employee-metrics-wrap {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding-right: $space-2;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--color-surface);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+
+    &:hover {
+      background: var(--color-text-muted);
+    }
+  }
+}
+
+.employee-metrics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: $font-size-sm;
+
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--color-surface);
+    border-bottom: 2px solid var(--color-border);
+
+    th {
+      text-align: left;
+      padding: $space-2 $space-3;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+
+      &:not(:first-child) {
+        text-align: right;
+      }
+    }
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--color-border);
+    transition: background 0.1s ease;
+
+    &:hover {
+      background: var(--color-surface);
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  td {
+    padding: $space-2 $space-3;
+    color: var(--color-text);
+
+    &:not(:first-child) {
+      text-align: right;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+  }
+
+  .employee-metrics-name {
+    font-weight: 500;
+  }
+}
+
 .alert-count {
   font-size: 2rem;
   font-weight: 700;

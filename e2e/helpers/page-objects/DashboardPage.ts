@@ -25,6 +25,11 @@ export class DashboardPage {
     return section.locator('tbody tr.data-row-clickable').first()
   }
 
+  /** Filter intake requests by status (e.g. "PENDING", "SEEN"). Use empty string for "All statuses". */
+  async filterIntakeByStatus(status: string): Promise<void> {
+    await this.page.getByRole('combobox', { name: /filter by status/i }).selectOption({ value: status })
+  }
+
   /** Wait for at least one intake request row to appear, then open the first one */
   async openFirstIntakeRequest(): Promise<void> {
     await this.getFirstIntakeRequestRow().click({ timeout: 30_000 })

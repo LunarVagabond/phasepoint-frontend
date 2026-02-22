@@ -203,13 +203,13 @@ const throughputDatasets = computed(() => {
 
 const employeeColumns = [
   { key: 'username', label: 'Employee', type: 'strong' as const },
-  { key: 'assets_processed', label: 'Assets attributed' },
-  { key: 'assets_intaked', label: 'Assets intaked' },
-  { key: 'assets_on_work_orders', label: 'Assets on WOs' },
+  { key: 'assets_processed', label: 'Current Attribution' },
+  { key: 'assets_intaked', label: '# Taken In' },
+  { key: 'assets_on_work_orders', label: '# On WOs' },
   { key: 'sanitization_records_count', label: 'Sanitizations' },
-  { key: 'assets_shipped', label: 'Assets shipped' },
-  { key: 'work_orders_completed', label: 'Work orders completed' },
-  { key: 'avg_turnaround_days', label: 'Avg turnaround (days)' },
+  { key: 'assets_shipped', label: '# Shipped' },
+  { key: 'work_orders_completed', label: '# Work Orders Completed' },
+  { key: 'avg_turnaround_days', label: 'Avg Turnaround (days)' },
   { key: 'activity_count', label: 'Activity count' },
 ]
 const employeeTotalRow = computed(() => {

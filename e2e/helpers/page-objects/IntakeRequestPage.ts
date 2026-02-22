@@ -6,14 +6,28 @@ import type { Page } from '@playwright/test'
 export class IntakeRequestPage {
   constructor(private readonly page: Page) {}
 
-  /** Intake detail modal container (dashboard modal) */
+  /** Intake detail modal container (dashboard modal) or detail page */
   getModal() {
     return this.page.locator('.intake-detail-modal').or(this.page.locator('.modal-backdrop').filter({ has: this.page.getByRole('heading', { name: /intake request/i }) }))
   }
 
-  /** Wait for the intake request modal to be visible (after opening a row) */
+  /** Wait for intake request view: either modal (legacy) or detail page (current – dashboard navigates to /intake-requests/:id) */
   async waitForModal(): Promise<void> {
-    await this.page.locator('.modal-backdrop .intake-detail-modal').waitFor({ state: 'visible', timeout: 15_000 })
+    const modal = this.page.locator('.modal-backdrop .intake-detail-modal')
+    const detailPage = this.page.getByRole('heading', { name: /^intake request$/i })
+    await Promise.race([
+      modal.waitFor({ state: 'visible', timeout: 15_000 }),
+      detailPage.waitFor({ state: 'visible', timeout: 15_000 }),
+    ])
+    // On detail page, wait for Actions section to be ready (any action: Accept, Start intake, or Add status note for COMPLETED)
+    if (await this.page.locator('.intake-request-detail').isVisible().catch(() => false)) {
+      const actionsReady = this.page
+        .locator('.intake-request-detail')
+        .locator('section.actions-card')
+        .getByRole('button')
+        .first()
+      await actionsReady.waitFor({ state: 'visible', timeout: 10_000 })
+    }
   }
 
   /** Modal or section showing request status */
@@ -26,10 +40,9 @@ export class IntakeRequestPage {
     return this.page.getByRole('button', { name: /reject/i })
   }
 
-  /** Accept button (scoped to modal to avoid matching filter options or other UI) */
+  /** Accept button (detail page or modal) */
   getAcceptButton() {
-    const modal = this.page.locator('.intake-detail-modal')
-    return modal.getByRole('button', { name: /^accept$/i })
+    return this.page.getByRole('button', { name: /^accept$/i })
   }
 
   /** Start intake button (when ACCEPTED) */

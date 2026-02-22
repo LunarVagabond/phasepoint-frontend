@@ -56,16 +56,20 @@ test.describe('Full flow: intake request → accept → intake → work order', 
     await page.getByLabel(/username/i).waitFor({ state: 'visible', timeout: 10_000 })
     await login.loginWithoutGoto(EMPLOYEE_CREDENTIALS.username, EMPLOYEE_CREDENTIALS.password)
 
-    // --- 2. Employee: dashboard, sort newest first, open first request, accept ---
+    // --- 2. Employee: dashboard, filter PENDING, sort newest first, open first request, accept ---
     await dashboard.goto()
     await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible({ timeout: 10_000 })
+    await dashboard.filterIntakeByStatus('PENDING')
+    await page.waitForTimeout(500)
     await page.getByRole('combobox', { name: /sort order/i }).selectOption({ value: '-created_at' })
     await page.waitForTimeout(800)
     await dashboard.openFirstIntakeRequest()
     await intakeRequestModal.waitForModal()
     await expect(intakeRequestModal.getAcceptButton()).toBeVisible({ timeout: 10_000 })
     await intakeRequestModal.accept()
-    await expect(page.locator('.badge[data-status="ACCEPTED"]')).toBeVisible({ timeout: 5_000 })
+    await expect(
+      page.locator('.badge[data-status="ACCEPTED"]').or(page.getByText('ACCEPTED', { exact: true }))
+    ).toBeVisible({ timeout: 5_000 })
     // Optional: schedule pickup when the card is visible (PICKUP delivery)
     const savePickup = page.getByRole('button', { name: /save pickup time/i })
     if (await savePickup.isVisible().catch(() => false)) {
@@ -76,7 +80,7 @@ test.describe('Full flow: intake request → accept → intake → work order', 
       await intakeRequestModal.savePickupTime()
       await page.waitForTimeout(1000)
     }
-    await page.getByRole('button', { name: /close/i }).click()
+    await page.getByRole('link', { name: /back to dashboard/i }).click()
 
     // --- 3. Employee: Intake page — select customer, select request (starts intake), submit ---
     await intakeView.goto()

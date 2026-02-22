@@ -14,24 +14,27 @@ export class RequestQuotePage {
     await this.page.goto(`${this.basePath}/requests/new`)
   }
 
-  /** Check an asset type by label (e.g. "Laptops") */
-  async checkAssetType(label: string | RegExp): Promise<void> {
-    await this.page.getByRole('checkbox', { name: label }).check()
+  /** Switch to "Quantity only" inventory mode (number inputs per type, no detailed table). */
+  async selectQuantityOnlyMode(): Promise<void> {
+    await this.page.getByRole('button', { name: /quantity only/i }).click()
   }
 
-  /** Set quantity for an asset type (input in the same row as the label) */
+  /** Set quantity for an asset type in "Quantity only" mode (e.g. "Laptop", "Phone", "Tablet"). Accepts "Laptops" etc. */
   async setQuantityForAssetType(assetTypeLabel: string, qty: number): Promise<void> {
-    const row = this.page.locator('.asset-type-row').filter({ has: this.page.getByText(assetTypeLabel, { exact: false }) })
-    await row.locator('input[type="number"]').fill(String(qty))
+    const normalized = assetTypeLabel.replace(/s$/, '')
+    const input = this.page.getByRole('spinbutton', {
+      name: new RegExp(`quantity of ${normalized}`, 'i'),
+    })
+    await input.fill(String(qty))
   }
 
-  /** Select delivery: "We pick up" (PICKUP) or "I will drop off" (DROP_OFF) */
+  /** Select delivery: PICKUP ("Pickup") or DROP_OFF ("Drop Off") */
   async setDeliveryPickup(): Promise<void> {
-    await this.page.getByLabel(/we pick up/i).check()
+    await this.page.getByRole('radio', { name: /^pickup$/i }).check()
   }
 
   async setDeliveryDropOff(): Promise<void> {
-    await this.page.getByLabel(/i will drop off/i).check()
+    await this.page.getByRole('radio', { name: /drop off/i }).check()
   }
 
   getSubmitButton() {
@@ -42,18 +45,18 @@ export class RequestQuotePage {
     await this.getSubmitButton().click()
   }
 
-  /** Fill minimal form: one asset type, quantity, PICKUP, then submit */
+  /** Fill minimal form in Quantity only mode: one asset type, quantity, PICKUP, then submit */
   async fillAndSubmitMinimal(assetTypeLabel: string, quantity: number): Promise<void> {
-    await this.checkAssetType(assetTypeLabel)
+    await this.selectQuantityOnlyMode()
     await this.setQuantityForAssetType(assetTypeLabel, quantity)
     await this.setDeliveryPickup()
     await this.submit()
   }
 
-  /** Fill form with multiple asset types and quantities, PICKUP, then submit */
+  /** Fill form in Quantity only mode with multiple types and quantities, PICKUP, then submit */
   async fillAndSubmitWithChoices(choices: { label: string; qty: number }[]): Promise<void> {
+    await this.selectQuantityOnlyMode()
     for (const { label, qty } of choices) {
-      await this.checkAssetType(label)
       await this.setQuantityForAssetType(label, qty)
     }
     await this.setDeliveryPickup()

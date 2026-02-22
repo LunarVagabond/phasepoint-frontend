@@ -15,9 +15,9 @@ export class AssetsListPage {
     await this.page.goto(`${this.basePath}/assets${qs}`)
   }
 
-  /** First data row's checkbox (select first asset) */
+  /** First data row's checkbox (select first asset). DataTable uses class .data-row-clickable. */
   getFirstRowCheckbox() {
-    return this.page.locator('tbody tr[data-row-clickable]').first().getByRole('checkbox')
+    return this.page.locator('tbody tr.data-row-clickable').first().getByRole('checkbox')
   }
 
   /** Select the first asset in the table */
@@ -45,6 +45,6 @@ export class AssetsListPage {
 
   /** Wait for assets table to have at least one row */
   async waitForAssetsLoaded(): Promise<void> {
-    await this.page.locator('tbody tr[data-row-clickable]').first().waitFor({ state: 'visible', timeout: 15_000 })
+    await this.page.locator('tbody tr.data-row-clickable').first().waitFor({ state: 'visible', timeout: 15_000 })
   }
 }

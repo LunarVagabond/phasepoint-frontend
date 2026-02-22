@@ -25,15 +25,23 @@
           </div>
           <div class="throughput-card throughput-card-scrollable">
             <h3>Employee Metrics</h3>
-            <div v-if="throughputData.processedByEmployee && throughputData.processedByEmployee.length > 0" class="employee-list-scrollable">
-              <div v-for="(emp, idx) in throughputData.processedByEmployee" :key="emp.intake_employee__username || emp.username || idx" class="employee-item employee-metrics-row">
-                <span class="employee-name">{{ emp.intake_employee__username || emp.username || 'Unknown' }}</span>
-                <span class="employee-counts">
-                  <span class="employee-count-intaked">{{ emp.assets_intaked ?? emp.count ?? 0 }} intaked</span>
-                  <span class="employee-count-sep">, </span>
-                  <span class="employee-count-wo">{{ emp.assets_on_work_orders ?? 0 }} on WOs</span>
-                </span>
-              </div>
+            <div v-if="throughputData.processedByEmployee && throughputData.processedByEmployee.length > 0" class="employee-metrics-wrap">
+              <table class="employee-metrics-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Employee</th>
+                    <th scope="col"># Taken In</th>
+                    <th scope="col"># On WOs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(emp, idx) in throughputData.processedByEmployee" :key="emp.intake_employee__username || emp.username || idx">
+                    <td class="employee-metrics-name">{{ emp.intake_employee__username || emp.username || 'Unknown' }}</td>
+                    <td class="employee-metrics-taken">{{ emp.assets_intaked ?? emp.count ?? 0 }}</td>
+                    <td class="employee-metrics-wo">{{ emp.assets_on_work_orders ?? 0 }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
             <p v-else class="modal-muted">No employee data available</p>
           </div>
@@ -689,7 +697,7 @@ const myPerformanceError = ref('')
 const throughputLoading = ref(false)
 const throughputError = ref('')
 const throughputData = ref<{
-  processedByEmployee: Array<{ intake_employee__username: string | null; count: number }>
+  processedByEmployee: KpiProcessedByEmployeeItem[]
   assetsByStage: Array<{ location: string; count: number }>
   openAlerts: number
 }>({

@@ -19,9 +19,9 @@ export class IntakeViewPage {
     return this.page.getByRole('combobox', { name: /customer/i }).first()
   }
 
-  /** Select customer by visible text (e.g. "Acme") */
+  /** Select customer by visible text (e.g. "Acme"). Playwright selectOption expects string label. */
   async selectCustomer(customerName: string): Promise<void> {
-    await this.getCustomerSelect().selectOption({ label: new RegExp(customerName, 'i') })
+    await this.getCustomerSelect().selectOption({ label: customerName })
   }
 
   /** Intake request dropdown (visible after customer selected) */
