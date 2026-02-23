@@ -461,6 +461,14 @@ export async function getMe(): Promise<MeResponse> {
   return r.json()
 }
 
+/** Same as getMe() but returns null on 401/403 instead of throwing. Use for "am I logged in?" checks (e.g. landing, auth store). */
+export async function getMeOptional(): Promise<MeResponse | null> {
+  const r = await request('/me/')
+  if (r.status === 401 || r.status === 403) return null
+  if (!r.ok) throw new Error('Failed to get current user')
+  return r.json()
+}
+
 export async function getEmployeeProfile(): Promise<EmployeeProfile> {
   const r = await request('/me/profile/')
   if (!r.ok) throw new Error('Failed to load profile')

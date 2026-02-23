@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:verify": "node -e \"const fs=require('fs'); const d='dist'; if(!fs.existsSync(d)){ console.error('No dist/ - run npm run build first'); process.exit(1); } const required=['sw.js','manifest.webmanifest','icon-192.png','icon-512.png']; const missing=required.filter(f=>!fs.existsSync(d+'/'+f)); const workbox=fs.readdirSync(d).filter(f=>f.startsWith('workbox-')&&f.endsWith('.js')); if(workbox.length===0) missing.push('workbox-*.js'); if(missing.length){ console.error('PWA build verify failed - missing in dist/:', missing.join(', ')); process.exit(1); } console.log('PWA files OK:', [...required, workbox[0]].join(', '));\"",
     "preview": "vite preview",
     "ts-check": "vue-tsc --noEmit",
     "test:unit": "vitest run",

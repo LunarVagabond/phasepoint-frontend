@@ -172,16 +172,19 @@ router.beforeEach(async (to) => {
   const { useAuthStore } = await import('../stores/auth')
   const authStore = useAuthStore()
   
+  // Skip auth fetch on all guest routes so unauthenticated visitors don't trigger 403 /api/me/
+  if (to.meta.guest) {
+    return true
+  }
+
   // Fetch user if not cached or cache expired (store handles caching internally)
   const me = await authStore.fetchUser()
-  
+
   if (!me) {
-    // Not authenticated
+    // Not authenticated – redirect to login only when a protected route was requested
     if (to.meta.requiresAuth || to.meta.requiresPolicyAccept) {
       return { name: 'Login', query: { redirect: to.path } }
     }
-    // Allow guest routes
-    if (to.meta.guest) return true
     return true
   }
   

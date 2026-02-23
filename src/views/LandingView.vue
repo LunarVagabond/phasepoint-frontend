@@ -317,16 +317,16 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getMe } from '../api'
+import { useAuthStore } from '../stores/auth'
 import EnvironmentBanner from '../components/EnvironmentBanner.vue'
 import PublicSiteHeader from '../components/PublicSiteHeader.vue'
 import SiteHeader from '../components/SiteHeader.vue'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const showSubmittedAlert = ref(Boolean(route.query.submitted))
-const isAuthenticated = ref(false)
-const userType = ref<'CUSTOMER' | 'EMPLOYEE' | null>(null)
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 const currentCardIndex = ref(0)
 const carouselTrack = ref<HTMLElement | null>(null)
@@ -445,26 +445,13 @@ function handleResize() {
   viewportWidth.value = window.innerWidth
 }
 
-onMounted(async () => {
+onMounted(() => {
   if (route.query.submitted) {
     router.replace({ path: '/', query: {} })
   }
-  
-  // Check if user is authenticated to show appropriate header
-  // Router guard will redirect authenticated users, but this handles edge cases
-  try {
-    const me = await getMe()
-    isAuthenticated.value = true
-    userType.value = me.user_type
-  } catch {
-    // Not authenticated, show public header
-    isAuthenticated.value = false
-  }
-  
+  // Auth state comes from router guard (single /api/me/ call); no extra request here
   window.addEventListener('resize', handleResize)
   handleResize()
-  
-  // Start auto-scroll
   startAutoScroll()
 })
 

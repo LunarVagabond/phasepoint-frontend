@@ -3,11 +3,6 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// TODO(PWA): Investigate how to enable "Install" / Add to Home Screen in Firefox.
-// Firefox may require: manifest with name, short_name, icons (at least 192x192 and 512x512),
-// and a secure context (HTTPS or localhost). Check beforeinstallprompt / manifest display
-// and Firefox-specific PWA install criteria so the install badge appears.
-
 // https://vite.dev/config/
 export default defineConfig({
   resolve: {
@@ -17,12 +12,22 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
+      devOptions: { enabled: false },
       workbox: { globPatterns: ['**/*.{js,css,html,ico,png,svg}'] },
       manifest: {
         name: 'Phasepoint ITAD',
         short_name: 'Phasepoint',
         display: 'standalone',
         description: 'Internal ITAD asset tracking',
+        theme_color: '#42b883',
+        background_color: '#ffffff',
+        // 192 and 512 PNGs in public/ required for install prompt (Chrome, Firefox)
+        icons: [
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
       },
     }),
   ],

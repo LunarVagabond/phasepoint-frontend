@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { getMe, type MeResponse } from '../api'
+import { getMeOptional, type MeResponse } from '../api'
 
 /**
  * Auth store - manages current user state
@@ -38,9 +38,9 @@ export const useAuthStore = defineStore('auth', () => {
 
     loading.value = true
     try {
-      const data = await getMe()
+      const data = await getMeOptional()
       user.value = data
-      lastFetched.value = Date.now()
+      lastFetched.value = data ? Date.now() : null
       return data
     } catch {
       user.value = null

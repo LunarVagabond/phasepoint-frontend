@@ -32,8 +32,9 @@ stop-dev:
 		pid=$$(cat $(PIDS_DIR)/dev.pid); \
 		if kill -0 $$pid 2>/dev/null; then kill $$pid; echo "Stopped dev server (pid $$pid)"; fi; \
 		rm -f $(PIDS_DIR)/dev.pid; \
-	else \
-		echo "No dev server pid file. Stop with: pkill -f 'vite'"; \
+	fi; \
+	if pkill -f "phasepoint-frontend/node_modules/.bin/vite" 2>/dev/null; then \
+		echo "Stopped any remaining Vite process for this project"; \
 	fi
 
 # Run kiosk mode dev server in background; stop with: make stop-kiosk

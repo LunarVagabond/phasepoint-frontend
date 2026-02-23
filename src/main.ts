@@ -1,9 +1,13 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import { registerSW } from 'virtual:pwa-register'
 import './styles/main.scss'
 import App from './App.vue'
 import router from './router'
 import { getTheme, setThemeOnDocument } from './composables/useTheme'
+
+// Register PWA service worker (auto-update when new version is available)
+registerSW({ immediate: true })
 
 // Apply theme before first paint so landing/login/customer portal match employee portal
 setThemeOnDocument(getTheme())
